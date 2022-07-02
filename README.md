@@ -1,2 +1,2 @@
 # survey
-archeological settlement analysis
+archaeological settlement analysis
