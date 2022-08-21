@@ -7,7 +7,7 @@
 
 The following notebooks are created using Quarto
 
-1. Data - (link)[]
+1. Data
 2. Aoristic Analysis
 3. Rank - Size Analysis
 4. Point Pattern
