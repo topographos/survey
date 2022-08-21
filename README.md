@@ -1,2 +1,4 @@
 # survey
-archaeological settlement analysis
+archaeological settlement analysis notebooks
+
+https://topographos.github.io/survey/
