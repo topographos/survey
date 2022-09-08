@@ -1,0 +1,188 @@
+---
+title: "Space-Time"
+author: "Michal Michalski"
+format: 
+  pdf:
+    toc: true
+    toc-depth: 2
+editor: visual
+editor_options: 
+  chunk_output_type: console
+---
+
+# Prep
+
+## Data First
+
+```{r}
+
+library(sf) # for spatial classes
+library(sfdep) # spatial dependence and ESDA
+library(dplyr) # tidy data
+library(stringr) # text 
+library(ggplot2) # plot data
+library(h3jsr) # uber hexagons
+
+```
+
+Next, load data from TBS survey - Survey Extent and Archaeological Sites
+
+```{r}
+
+# find out layer names
+st_layers("../data/vect/data.gpkg")
+
+# survey boundary
+survey_sf = st_read("../data/vect/data.gpkg", layer = "tbs_survey_extent") %>% 
+  st_transform(crs = 4326)
+
+# sites 
+sites = readRDS("../data/vect/n_mes_sites_LONG.rds") %>% 
+  filter(str_detect(id,"TBS")) %>% 
+  select(id, cent_start, longitude, latitude) %>% 
+  mutate(century = as.numeric(cent_start)) %>% 
+  select(-cent_start)
+
+# create sf class
+sites_sf = st_as_sf(sites, coords = c("longitude", "latitude"), crs = st_crs(4326))
+
+
+
+```
+
+Plot the data
+
+```{r}
+
+ggplot() +
+  geom_sf(data = survey_sf, fill = NA, linetype = 21) +
+  geom_sf(data = sites_sf) +
+  ggtitle('Tell Beydar Survey', subtitle = 'Extent and Sites') +
+  coord_sf() +
+  theme_light()
+
+```
+
+## Hexagons
+
+```{r}
+
+tbs_7 <- polyfill(survey_sf, res = 7, simple = FALSE)
+
+tbs_7 <- h3_to_polygon(unlist(tbs_7$h3_polyfillers), simple = FALSE)
+
+tbs_6 <- polyfill(survey_sf, res = 6, simple = FALSE)
+
+tbs_6 <- h3_to_polygon(unlist(tbs_6$h3_polyfillers), simple = FALSE)
+
+ggplot() +
+  geom_sf(data = survey_sf, fill = NA, linetype = 21) +
+  geom_sf(data = tbs_7, fill = NA, colour = 'red') +
+  geom_sf(data = tbs_6, fill = NA, colour = 'blue') +
+  geom_sf(data = sites_sf) +
+  ggtitle('TBS Survey', subtitle = 'Resolution 6 and 7 hexagons') +
+  theme_minimal() +
+  coord_sf()
+
+```
+
+Point - in - Polygon: join unique hexagons identifier to points
+
+```{r}
+
+head(tbs_6)
+
+head(sites_sf)
+
+sites_sf = st_join(sites_sf, tbs_7)
+  
+sites_sf = sites_sf %>% select(-h3_resolution)
+
+tbs_df = sites_sf %>% 
+  st_drop_geometry()
+
+tbs_df = tbs_df %>% 
+  dplyr::as_tibble() %>% 
+  filter(!is.na(h3_address)) %>% 
+  count(century, h3_address, .drop = FALSE) %>% 
+  tidyr::complete(century, h3_address, fill = list(n = 0))
+
+
+```
+
+Prepare Hexagon geometry
+
+```{r}
+
+head(tbs_7)
+
+tbs_geo = tbs_7 %>% select(-h3_resolution)
+
+tbs_geo_subset = semi_join(tbs_geo,tbs_df)
+
+plot(tbs_geo_subset)
+```
+
+```{r}
+
+tbs_spt <- spacetime(tbs_df, 
+                     tbs_geo_subset, 
+                     "h3_address", 
+                     "century")
+
+is_spacetime(tbs_spt)
+
+tbs_spt = complete_spacetime_cube(tbs_spt)
+
+tbs_spt
+
+
+```
+
+# Emerging Hot Spots Analysis
+
+```{r}
+# conduct EHSA
+ehsa = emerging_hotspot_analysis(tbs_spt, "n")
+
+```
+
+have a look at results
+
+```{r}
+
+ head(ehsa)
+
+```
+
+classification
+
+```{r}
+
+unique(ehsa$classification)
+
+```
+
+plot results
+
+```{r}
+dplyr::left_join(ehsa, tbs_geo_subset, by = c("location" = "h3_address")) |>
+  sf::st_as_sf() |>
+  ggplot() +
+  geom_sf(aes(fill = classification), lwd = 0.1, color = "black") +
+  geom_sf(data = survey_sf, fill = NA, linetype = 21) +
+  geom_sf(data = sites_sf) +
+  # specify colors
+  scale_fill_manual(
+    values = c(
+      "no pattern detected" = "white", 
+      #"new coldspot" = "#84d6e3", 
+      "oscilating coldspot" = "#6ba5c7",
+      "sporadic coldspot" = "#5084a3",
+      #"consecutive coldspot" = "#386682",
+      "sporadic hotspot" = "#db6381"
+      #"consecutive hotspot" = "#a3485f"
+      )
+  ) + 
+  theme_light()
+```

@@ -9,6 +9,7 @@ The following notebooks are created using Quarto
 
 1. Data
 2. Aoristic Analysis
-3. Rank - Size Analysis
+3. Demography
 4. Point Pattern
-5. Spatial Index of Aglomeration
+5. Index
+6. Space-Time
