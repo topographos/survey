@@ -1,22 +1,42 @@
-# LIBRARIES ----
+---
+title: "data prep - aoristic"
+author: "Michal Michalski"
+format: 
+  html:
+    code-fold: true
+    toc: true
+    code-overflow: wrap
+editor: visual
+execute: 
+  warning: false
+---
 
+# Method
+
+describe in context of Aoristic Analysis
+
+# Processing
+
+Packages
+
+```{r}
 library(sf)
+library(knitr)
+library(tidyverse)
 library(kairos)
-library(dplyr)
-library(tidyr)
-library(ggplot2)
-library(stringr)
-library(janitor)
 
-# LOAD EXTRA FUNCTION ----
+# extarnal custom function
+source("../func/round_any.R")
+```
 
-source("func/round_any.R")
+## Input
 
+Read survey data and select survey by code
 
-# LOAD DATA ----
+```{r}
 
 # read shapefile
-n_mes_sites_raw = st_read("./data/raw/north_mesopotamia_sites.shp") %>% 
+n_mes_sites_raw = st_read("../data/raw/north_mesopotamia_sites.shp", quiet = TRUE) %>% 
   janitor::clean_names()
 
 # add column with survey code
@@ -28,8 +48,14 @@ n_mes_sites_raw = n_mes_sites_raw %>%
 # select sites from one survey to analyse
 sites_njs = n_mes_sites_raw %>% filter(code == "LCP")
 
-# INTEGRITY CHECKS ----
+# look at the data
+knitr::kable(head(sites_njs))
 
+```
+
+Do integrity checks - compare number of sites after rounding time blocks to 50 years.
+
+```{r}
 # set geometry to null
 sites_njs = st_drop_geometry(sites_njs)
 
@@ -57,17 +83,17 @@ summary_periods_rounded = sites_njs %>%
 # bind two df with periods
 periods = cbind(summary_periods, summary_periods_rounded)
 
-# AORISTIC ----
+# look at the data
+knitr::kable(periods)
+
+```
+
+Apply aoristic analysis
+
+```{r}
 
 # create aoristic sum ----
 aorist_sum = aoristic(sites_njs, start = -3100, stop = 700,step = 50, weight = TRUE)
-
-# create aoristic roc ----
-roc_weighted = kairos::roc(aorist_sum, n = 2)
-
-kairos::plot(roc_weighted)
-
-kairos::autoplot(aorist_sum)
 
 # extract sum for each time step as a vector - to be ploted on y axis
 y = as.vector(aorist_sum)
@@ -82,16 +108,6 @@ x = rowMeans(blocks)
 
 # create a data frame
 aorist_sum_df = tibble(x,y)
-
-# plot aoristic sum ----
-
-## line
-ggplot(aorist_sum_df, aes(x=x,y=y)) +
-  geom_line()
-  
-## bar
-  ggplot(aorist_sum_df, aes(x=x,y=y)) +
-    geom_col()
 
 # extract weights ----
 array_p = aorist_sum@p
@@ -122,10 +138,64 @@ aorist_long_df = aorist_wide_df %>%
   )
 
 
+```
 
+## Output
+
+TABLE - WIDE
+
+```{r}
+knitr::kable(head(aorist_wide_df))
+
+```
+
+TABLE - LONG
+
+```{r}
+knitr::kable(head(aorist_wide_df))
+```
+
+Save the files
+
+```{r}
+#| eval: false
 # save to rds format
-saveRDS(aorist_wide_df,"./data/tab/lcp_sites_WIDE.rds")
+saveRDS(aorist_wide_df,"../data/tab/lcp_sites_WIDE.rds")
 
-saveRDS(aorist_long_df,"./data/tab/lcp_sites_LONG.rds")
+saveRDS(aorist_long_df,"../data/tab/lcp_sites_LONG.rds")
+```
 
+Spatial Feature
 
+```{r}
+
+# read long data 
+sites = readRDS("../data/tab/lcp_sites_LONG.rds")
+
+# provide the EPSG code using st_crs()
+crs_wgs84 = st_crs(4326) # WGS84 has EPSG code 4326
+
+sites_sf = st_as_sf(sites, coords = c("longitude", "latitude"))
+
+st_crs(sites_sf) = crs_wgs84
+
+# provide the EPSG code using st_crs() - https://epsg.io/32637
+
+UTM_Zone_37N = st_crs(32637) # IGRS_UTM_Zone_38N EPSG: 3891
+
+# transform sites from 
+
+sites_sf = st_transform(sites_sf, UTM_Zone_37N)
+
+plot(sites_sf$geometry)
+```
+
+Save files
+
+```{r}
+#| eval: false
+saveRDS(sites_sf,"../data/tab/lcp_sites_LONG_SF.rds")
+
+```
+
+# References

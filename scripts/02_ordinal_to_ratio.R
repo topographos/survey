@@ -47,7 +47,7 @@ add_size_cat_parker = function(data, colname) {
   colname <- enquo(colname)
   data  %>% 
     mutate(
-      size_cat := case_when(
+      category := case_when(
         !!(colname) < 0.1 ~ "scatter",
         !!(colname) >= 0.1 & !!(colname) < 1 ~ "small village",
         !!(colname) >= 1 & !!(colname) < 5 ~ "village",
@@ -62,7 +62,7 @@ add_size_cat_parker = function(data, colname) {
 }
 
 # run using function
-ths_sites = add_size_cat_parker(ths_sites, colname = area)
+ths_sites = add_size_cat_parker(sites, colname = size_ha)
 
 # export to database
 

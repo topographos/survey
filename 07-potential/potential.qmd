@@ -1,0 +1,184 @@
+---
+title: "potential"
+author: "Michal Michalski"
+format: html
+editor: visual
+---
+
+## Quarto
+
+Quarto enables you to weave together content and executable code into a finished document. To learn more about Quarto see <https://quarto.org>.
+
+## Survey Data
+
+```{r}
+library(sf)
+library(dplyr)
+library(tmap)
+
+# load survey
+survey = st_read("../data/vect/data.gpkg",  layer = "njs_survey")
+
+# load sites data
+sites = readRDS("../data/tab/njs_sites_LONG_SF.rds")
+
+# filter Bronze Age sites
+sites_ba = sites %>% filter(id == "NJS_1_0_0")
+
+# filter iron age sitees
+sites_ia = sites %>% filter(time_start == -900)
+
+# map BA sites
+map_ba = tm_shape(sites_ba) +
+  tm_dots(size = 0.5, alpha = 0.5) +
+  tm_layout("Bronze Age")
+
+# map IA sites
+map_ia = tm_shape(sites_ia) +
+  tm_dots(size = 0.5, alpha = 0.5) +
+  tm_layout("Iron Age")
+
+# combine two maps
+tmap_arrange(map_ba,map_ia, nrow = 1)
+```
+
+Calculate Grid
+
+```{r}
+
+grid = create_grid(x = sites, res = 250)
+
+tm_shape(grid) +
+  tm_dots(col = "grey", alpha = 0.5) +
+tm_shape(sites_ba) +
+  tm_dots(size = 0.5, alpha = 0.8, col = "firebrick1") +
+tm_shape(sites_ia) +
+  tm_dots(size = 0.5, alpha = 0.5, col = "steelblue4") +
+tm_legend()
+  
+  
+
+```
+
+Create Distance Matrix
+
+```{r}
+
+#bronze age sites
+d_ba <- create_matrix(x = sites_ba, y = grid)
+
+#bronze age sites
+d_ia <- create_matrix(x = sites_ia, y = grid)
+
+# matrix distances
+d_ia[1:5,1:5]
+
+
+```
+
+Potential
+
+Model interaction
+
+```{r}
+
+plot_inter(fun = "e", span = 5000, beta = 2, limit = 8000)
+
+
+
+```
+
+Compute Potential
+
+```{r}
+
+# potential for bronze age
+grid$pot_ba <- potential(x = sites_ba, 
+                         y = grid, 
+                         d = d_ba,
+                         var = "size_ha", 
+                         fun = "e",
+                         span = 5000, 
+                         beta = 2
+                         )
+
+# potential for iron age
+grid$pot_ia <- potential(x = sites_ia, 
+                         y = grid, 
+                         d = d_ia,
+                         var = "size_ha", 
+                         fun = "e",
+                         span = 5000, 
+                         beta = 2
+                         )
+
+
+```
+
+Plot
+
+```{r}
+
+pot_ba = tm_shape(grid) +
+ tm_symbols(size = "pot_ba") 
+
+pot_ia = tm_shape(grid) +
+ tm_symbols(size = "pot_ia") 
+
+tmap_arrange(pot_ba,pot_ia, nrow = 1)
+
+```
+
+Compute Potential
+
+```{r}
+equipot_ba =  equipotential(x = grid, 
+                          var = "pot_ba", 
+                          nclass = 10,
+                          mask = survey
+                          )
+
+equipot_ia =  equipotential(x = grid, 
+                          var = "pot_ia", 
+                          nclass = 10,
+                          mask = survey
+                          )
+
+ba = tm_shape(equipot_ba) +
+  tm_polygons(col = "center")
+
+ia = tm_shape(equipot_ia) +
+  tm_polygons(col = "center")
+
+tmap_arrange(ba,ia)
+```
+
+As above but normalized
+
+```{r}
+
+grid$pot_ba2 <- 100 * grid$pot_ba / max(grid$pot_ba)
+
+grid$pot_ia2 <- 100 * grid$pot_ia / max(grid$pot_ia)
+
+equipot_ba =  equipotential(x = grid, 
+                          var = "pot_ba2", 
+                          breaks = 50,
+                          mask = survey
+                          )
+
+equipot_ia =  equipotential(x = grid, 
+                          var = "pot_ia2", 
+                          nclass = 2,
+                          mask = survey
+                          )
+
+ba = tm_shape(equipot_ba) +
+  tm_polygons(col = "center")
+
+ia = tm_shape(equipot_ia) +
+  tm_polygons(col = "center")
+
+tmap_arrange(ba,ia)
+
+```

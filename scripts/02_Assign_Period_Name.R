@@ -2,7 +2,9 @@ library(sf)
 library(purrr)
 library(dplyr)
 install.packages("purrr")
-# load data
+
+
+# TBS ----
 
 st_layers("data/data.gpkg")
 
@@ -43,3 +45,34 @@ tbs_sites_2600_300BC = tbs_sites %>%
 
 st_write(tbs_sites_2600_300BC, "data/data.gpkg", 
          layer = "tbs_sites_2600_300BC", delete_layer = TRUE)
+
+
+# NJS ----
+
+# load data
+njs_sites = readRDS("data/tab/njs_sites_LONG.rds")
+
+# ad temporary mid_point coulmn
+njs_sites = njs_sites %>% 
+  mutate(
+    mid_point = time_start + 25 # 25 years
+  )
+
+# add period name
+njs_sites = njs_sites %>% 
+  mutate(
+    period = case_when(     mid_point > -3100 & mid_point < -2550 ~ "Early 3rd Millenium",
+                            mid_point > -2550 & mid_point < -2000 ~ "Late 3rd Millenium",
+                            mid_point > -2000 & mid_point < -1400 ~ "Khabur",
+                            mid_point > -1400 & mid_point < -1000 ~ "Middle Assyrian",
+                            mid_point > -1000 & mid_point < -600 ~  "Late Assyrian",
+                            mid_point > -600  & mid_point < -300 ~  "Post Assyrian",
+                            mid_point > -300  & mid_point < -150 ~  "Hellenistic",
+                            mid_point > -150  & mid_point <  250 ~  "Parthian",
+                            mid_point >  250  & mid_point <  650 ~  "Sasanian",
+                            mid_point >  650  & mid_point <  1050 ~  "Early Islamic")
+  ) %>% 
+  select(-mid_point)
+
+# save
+saveRDS(njs_sites,"./data/tab/njs_sites_LONG.rds")

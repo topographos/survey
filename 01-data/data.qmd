@@ -1,0 +1,87 @@
+---
+title: "data"
+author: "Michal Michalski"
+format: 
+  html:
+    code-fold: true
+    toc: true
+    code-overflow: wrap
+editor: visual
+execute: 
+  warning: false
+---
+
+## Archaeological Survey
+
+```{r}
+
+# load libraries
+library(sf) # for spatial classes
+library(dplyr) # wrangle data
+library(stringr) # text wrangling
+
+# read northern mesopotamian sites
+n_mes_sites = st_read("../data/raw/north_mesopotamia_sites.shp",quiet = TRUE ) %>% 
+  janitor::clean_names() %>% 
+  mutate(
+   code = str_extract(id, "[^_]+")
+  )
+
+# create summary table counting unique sites by survey
+surveys_df = n_mes_sites %>% 
+  st_drop_geometry() %>% 
+  group_by(code, source) %>% 
+  summarise(n_sites = n_distinct(id))
+
+# create summary table for mapping
+surveys_sf = n_mes_sites %>% 
+  group_by(code) %>% 
+  summarise(sites = n_distinct(id))
+
+```
+
+Archaeological surveys in the Northern Mesopotamia
+
+```{r}
+
+library(knitr)
+
+knitr::kable(surveys_df)
+```
+
+map
+
+```{r}
+
+library(tmap)
+
+tm_shape(surveys_sf) +
+  tm_dots(col = "code") +
+  tm_layout(main.title = "Archaeological Surveys",
+            legend.outside = TRUE,
+            legend.outside.size = .1,
+            asp = 0) +
+  tm_scale_bar(position=c("right", "BOTTOM"),)
+
+
+```
+
+## Climate
+
+Precipitation
+
+Temperature
+
+## Soil
+
+## Topography
+
+### Digital Elevation Model
+
+### Slope
+
+### Aspect
+
+### Terrain Position Index
+
+#### 

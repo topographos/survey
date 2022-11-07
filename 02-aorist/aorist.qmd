@@ -6,27 +6,35 @@ editor: visual
 bibliography: references.bib
 ---
 
-## Quarto
-
-Quarto enables you to weave together content and executable code into a finished document. To learn more about Quarto see <https://quarto.org>.
-
-## Running Code
-
-When you click the **Render** button a document will be generated that includes both content and the output of embedded code. You can embed code like this:
+## Aoristic Analysis
 
 ```{r}
 1 + 1
 ```
 
-You can add options to executable code like this
+Single Survey
+
+NJS
 
 ```{r}
-#| echo: false
-2 * 2
+
+n_mes_sites_long = readRDS("../data/tab/n_mes_sites_LONG.rds")
+
+head(n_mes_sites_long)
+
+njs_sites_wide = n_mes_sites_long %>% 
+  filter(code == "NJS") %>% 
+  select(id, size_ha, longitude, latitude, from, to, period_start, aorist_prob)
+  
+
 ```
 
-The `echo: false` option disables the printing of code (only output is displayed).
+```{r}
 
-[@crema2012]
+count = njs_sites_wide %>% 
+  group_by(id, period_start) %>% 
+  count()
+
+```
 
 [@crema2010]

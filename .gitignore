@@ -39,4 +39,5 @@ vignettes/*.pdf
 .Renviron
 
 # data
-data/data.gpkg
+data/
+
