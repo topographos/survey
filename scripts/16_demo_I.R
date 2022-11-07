@@ -3,7 +3,7 @@ library(sf)
 library(tidyverse)
 
 # load data
-sites = readRDS("./data/tab/lcp_sites_LONG_SF.rds")
+sites = readRDS("./data/tab/njs_sites_LONG_SF.rds")
 
 # 1: count sites by time block
 sites_count = sites %>% 

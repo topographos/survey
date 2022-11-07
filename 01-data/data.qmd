@@ -1,5 +1,5 @@
 ---
-title: "data"
+title: "Data"
 author: "Michal Michalski"
 format: 
   html:
@@ -49,19 +49,16 @@ library(knitr)
 knitr::kable(surveys_df)
 ```
 
-map
-
 ```{r}
 
 library(tmap)
 
 tm_shape(surveys_sf) +
-  tm_dots(col = "code") +
-  tm_layout(main.title = "Archaeological Surveys",
-            legend.outside = TRUE,
-            legend.outside.size = .1,
-            asp = 0) +
-  tm_scale_bar(position=c("right", "BOTTOM"),)
+  tm_dots(size = 0.05) +
+  tm_layout(main.title = "Archaeological Surveys - Northern Mesopotamia",
+            ) +
+  tm_scale_bar(position=c("right", "BOTTOM"),) +
+  tm_facets(by="code", free.coords = TRUE)
 
 
 ```
@@ -78,10 +75,56 @@ Temperature
 
 ### Digital Elevation Model
 
+```{r}
+
+dem = terra::rast("../data/rast/njs/dem.tif")
+
+terra::plot(dem)
+```
+
 ### Slope
+
+```{r}
+
+slope = terra::rast("../data/rast/njs/slope.tif")
+
+terra::plot(slope)
+```
 
 ### Aspect
 
+```{r}
+
+aspect = terra::rast("../data/rast/njs/aspect.tif")
+
+terra::plot(aspect)
+```
+
 ### Terrain Position Index
 
-#### 
+```{r}
+
+tpi = terra::rast("../data/rast/njs/tpi.tif")
+
+terra::plot(tpi)
+```
+
+### Compound Topographic Index
+
+```{r}
+
+cti = terra::rast("../data/rast/njs/cti.tif")
+
+terra::plot(cti)
+
+```
+
+#### Geomorphons
+
+```{r}
+
+geomorphon = terra::rast("../data/rast/njs/geom.tif")
+
+terra::plot(geomorphon, type = "classes")
+
+```

@@ -1,0 +1,87 @@
+---
+title: "data prep - point pattern"
+author: "Michal Michalski"
+format: 
+  html:
+    code-fold: true
+    toc: true
+    code-overflow: wrap
+editor: visual
+execute: 
+  warning: false
+---
+
+# Method
+
+To Be Added
+
+# Processing
+
+Packages
+
+```{r}
+
+library(sf)
+library(spatstat)
+library(maptools)
+
+
+```
+
+## Input
+
+Read sites and survey extent
+
+```{r}
+
+# load data
+# sites
+sites = readRDS("../data/tab/lcp_sites_LONG_SF.rds")
+
+# survey extent
+survey = st_read("../data/vect/data.gpkg", layer = "lcp_survey", quiet = TRUE ) %>%
+  st_buffer(1000) %>% 
+  st_as_sfc()
+
+plot(survey)
+plot(sites$geometry, add = TRUE)
+
+```
+
+Creat PPP Object
+
+```{r}
+
+# create ppp window object
+survey.win = as.owin(survey)
+class(survey.win)
+
+# create ppp with period marks
+
+## extract coordinates
+sites_coords = st_coordinates(sites)
+
+## create data frame with marks
+# marks_df = data.frame(time = as.factor(sites$time_start), size = sites$size_ha)
+marks_df = data.frame(time = as.factor(sites$time_start))
+
+## create ppp
+survey.ppp = ppp( x = sites_coords[,1], 
+                  y = sites_coords[,2], 
+                  marks = marks_df,
+                  window = survey.win)
+
+
+
+```
+
+## Output
+
+Save
+
+```{r}
+
+## save as an R object
+saveRDS(survey.ppp, "../data/tab/lcp_survey_PPP.rds")
+
+```

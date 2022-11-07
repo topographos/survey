@@ -11,12 +11,12 @@ The following notebooks are created using Quarto
 
  * [data](https://topographos.github.io/survey/01-data/data.html)
  
- * [data preparation - aoristic](https://topographos.github.io/survey/01-data/data_prep_aoristic.html)
+ * data preparation - [aoristic](https://topographos.github.io/survey/01-data/data_prep_aoristic.html)
  
- * data preparation - point pattern
+ * data preparation - [point pattern](https://topographos.github.io/survey/01-data/data_prep_ppp.html)
  
 2. Aoristic Analysis
-3. Demography
+3. [Demography](https://topographos.github.io/survey/03-demography/data_prep_ppp.html)
 4. Point Pattern
 
  * Density
