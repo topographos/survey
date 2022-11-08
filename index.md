@@ -15,7 +15,7 @@ The following notebooks are created using Quarto
  
  * [data preparation - point pattern](https://topographos.github.io/survey/01-data/data_prep_ppp.html)
  
-2. Aoristic Analysis
+2. [Aoristic Analysis](https://topographos.github.io/survey/01-data/aorist.html)
 3. [Demography](https://topographos.github.io/survey/03-demography/demo.html)
 4. Point Pattern
 
@@ -24,5 +24,8 @@ The following notebooks are created using Quarto
  * Nearest Neighbor 
  
 5. Index
+
+ * SPAG
+ 
 6. Interaction
 6. Space-Time

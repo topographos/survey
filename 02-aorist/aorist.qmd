@@ -1,40 +1,94 @@
 ---
-title: "Aoristic"
+title: "Aoristic Analysis"
 author: "Michal Michalski"
-format: html
+format: 
+  html:
+    code-fold: true
+    toc: true
+    code-overflow: wrap
 editor: visual
+execute: 
+  warning: false
 bibliography: references.bib
 ---
 
-## Aoristic Analysis
+# Method
+
+# Analysis
+
+## Pakcages
 
 ```{r}
-1 + 1
-```
-
-Single Survey
-
-NJS
-
-```{r}
-
-n_mes_sites_long = readRDS("../data/tab/n_mes_sites_LONG.rds")
-
-head(n_mes_sites_long)
-
-njs_sites_wide = n_mes_sites_long %>% 
-  filter(code == "NJS") %>% 
-  select(id, size_ha, longitude, latitude, from, to, period_start, aorist_prob)
-  
+library(sf)
+library(kairos)
+library(stringr) 
+library(dplyr)
 
 ```
 
+## Data
+
 ```{r}
 
-count = njs_sites_wide %>% 
-  group_by(id, period_start) %>% 
-  count()
+n_mes_sites = st_read("../data/raw/north_mesopotamia_sites.shp",quiet = TRUE ) %>% 
+  janitor::clean_names() %>% 
+  mutate(
+   code = as.factor(str_extract(id, "[^_]+"))
+  ) %>% 
+  st_drop_geometry() %>% 
+  mutate(
+    from = start_date,
+    to = end_date
+  ) %>% 
+  filter(code == "NJS" | code == "LCP")
+
 
 ```
+
+## Aoristic Sum
+
+Aoristic Sum as number of sites in the block
+
+```{r}
+
+# site count
+aorist_sum = aoristic(n_mes_sites, 
+                      start = -2000, 
+                      stop = 700,
+                      step = 50, 
+                      weight = FALSE, 
+                      groups = n_mes_sites$code)
+
+kairos::plot(aorist_sum)
+```
+
+Aoristic Sum weighted by the length of periods
+
+```{r}
+
+aorist_sum_w = aoristic(n_mes_sites, 
+                      start = -2000, 
+                      stop = 700,
+                      step = 50, 
+                      weight = TRUE, 
+                      groups = n_mes_sites$code)
+
+kairos::plot(aorist_sum_w)
+
+```
+
+## Rate of Change
+
+Rate of Change (non-weighted sum)
+
+```{r}
+
+roc = kairos::roc(aorist_sum)
+
+kairos::plot(roc, n = 99)
+
+```
+
+# References
 
 [@crema2010]
