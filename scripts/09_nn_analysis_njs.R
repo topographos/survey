@@ -1,6 +1,5 @@
 # r packages ----
 library(sf)
-library(nngeo)
 library(spatstat)
 
 # read data

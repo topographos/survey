@@ -7,7 +7,7 @@ library(dplyr)
 sites = readRDS("data/tab/njs_sites_LONG_SF.rds")
 
 # sites from ia
-sites_ia = filter(time_start == -700)
+sites_ia = filter(sites,time_start == -700)
 
 # survey extent
 survey = st_read("data/vect/data.gpkg", layer = "njs_survey")
@@ -29,7 +29,7 @@ index = ce_index[1,],
 time = as.numeric(colnames(ce_index))
 )
 
-ce_index_df$index_sc = scales::rescale(ce_index_df$index, to = c(0,1))
+
 
 ggplot() + 
   geom_line(data = ce_index_df, mapping = aes(x = time, y = index))

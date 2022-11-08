@@ -1,0 +1,219 @@
+---
+title: "Nearest Neighbour"
+author: "Michal Michalski"
+format: 
+  html:
+    code-fold: true
+    toc: true
+    code-overflow: wrap
+editor: visual
+execute: 
+  warning: false
+---
+
+# Nearest Neighbour Analysis
+
+## Processing
+
+Packages
+
+```{r}
+library(sf)
+library(spatstat)
+library(tidyverse)
+library(hrbrthemes)
+
+```
+
+Read Data
+
+```{r}
+
+# read data
+sites = readRDS("../data/tab/lcp_sites_LONG_SF.rds")
+
+```
+
+Compute distance to k nearest neighbour
+
+```{r}
+
+# nn
+ppp = as.ppp(sites)
+
+marks(ppp) = as.factor(sites$time_start)
+
+ppp_list = split(ppp)
+
+sites_list = split(sites, sites$time_start)
+
+for (i in 1:length(sites_list)){
+  
+  nn = sapply(ppp_list, nndist)
+  
+  sites_list[[i]]$dist = nn[[i]]
+  
+}
+
+
+
+# combine into one list
+combined_list = do.call("rbind",sites_list)
+
+combined_list = combined_list %>% relocate(geometry, .after = last_col())
+
+rownames(combined_list) = NULL
+
+
+```
+
+Save data
+
+```{r}
+
+saveRDS(combined_list,"../data/tab/lcp_sites_LONG_SF.rds")
+```
+
+## Average Nearest Neighbour
+
+Read Data
+
+```{r}
+
+sites_njs = readRDS("../data/tab/njs_sites_LONG_SF.rds")
+
+sites_lcp = readRDS("../data/tab/lcp_sites_LONG_SF.rds")
+
+
+
+```
+
+Compute average nearest distance by time block
+
+```{r}
+# NJS
+ann_njs = sites_njs %>% 
+  group_by(time_start) %>% 
+  summarise(
+    ann = mean(dist)
+  )
+
+ann_njs_sc = ann_njs %>% 
+  mutate(
+    ann_sc = scales::rescale(ann_njs$ann, to = c(0,1))
+  ) %>% 
+  st_drop_geometry()
+
+saveRDS(ann_njs_sc,"../data/tab/ann_sc_njs.rds")
+
+
+
+```
+
+```{r}
+# LCP
+ann_lcp = sites_lcp %>% 
+  group_by(time_start) %>% 
+  summarise(
+    ann = mean(dist)
+  )
+
+ann_lcp_sc = ann_lcp %>% 
+  mutate(
+    ann_sc = scales::rescale(ann_lcp$ann, to = c(0,1))
+  ) %>% 
+  st_drop_geometry()
+
+saveRDS(ann_lcp_sc,"../data/tab/ann_sc_lcp.rds")
+```
+
+Plot
+
+```{r}
+# NJS
+ggplot() + 
+  geom_line(data = ann_njs, mapping = aes(x = time_start, y = ann)) +
+  scale_x_continuous(n.breaks = 10) +
+  labs(title = "ANN - NJS Survey") +
+  theme_ipsum()
+
+# LCP
+ggplot() +
+  geom_line(data = ann_lcp, mapping = aes(x = time_start, y = ann)) +
+  labs(title = "ANN - LCP Survey") +
+  scale_x_continuous(n.breaks = 10) +
+  theme_ipsum()
+```
+
+## Clark Evans
+
+NJS
+
+```{r}
+#  read point pattern
+njs.ppp = readRDS("../data/tab/njs_survey_PPP.rds")
+
+# split into list
+ls = split(njs.ppp)
+
+# compute index
+ce_index = sapply(ls, clarkevans)
+
+ce_index_njs = data.frame(
+index = ce_index[1,],
+time = as.numeric(colnames(ce_index))
+)
+
+```
+
+LCP
+
+```{r}
+#  read point pattern
+lcp.ppp = readRDS("../data/tab/lcp_survey_PPP.rds")
+
+# split into list
+ls = split(lcp.ppp)
+
+# compute index
+ce_index_lcp = sapply(ls, clarkevans)
+
+ce_index_lcp = data.frame(
+index = ce_index_lcp[1,],
+time = as.numeric(colnames(ce_index_lcp))
+)
+```
+
+Plot
+
+```{r}
+ggplot() +
+  geom_line(data = ce_index_njs, mapping = aes(x = time, y = index, color = "NJS")) +
+  geom_line(data = ce_index_lcp, mapping = aes(x = time, y = index, color = "LCP")) +
+  labs(title = "Clark Evans",
+       subtitle = "clustering < 1, disperison > 1" ) +
+  scale_color_manual(name = "Survey", values = c("NJS" = "blue", "LCP" = "red")) +
+  scale_x_continuous(n.breaks = 10) +
+  scale_y_continuous(n.breaks = 10) +
+  theme_ipsum()
+```
+
+LCP
+
+```{r}
+
+stienen(X = split(lcp.ppp)$'-300')
+
+stienen(X = split(lcp.ppp)$'300')
+```
+
+NJS
+
+```{r}
+
+
+stienen(X = split(njs.ppp)$'-800')
+
+stienen(X = split(njs.ppp)$'300')
+
+```
