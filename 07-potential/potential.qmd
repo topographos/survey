@@ -1,29 +1,41 @@
 ---
 title: "potential"
 author: "Michal Michalski"
-format: html
+format: 
+  html:
+    code-fold: true
+    toc: true
+    code-overflow: wrap
 editor: visual
+execute: 
+  warning: false
 ---
 
-## Quarto
+## Method
 
-Quarto enables you to weave together content and executable code into a finished document. To learn more about Quarto see <https://quarto.org>.
+## Potenital
 
-## Survey Data
+### Packages
 
 ```{r}
 library(sf)
 library(dplyr)
 library(tmap)
+library(potential)
+```
+
+### Data
+
+```{r}
 
 # load survey
-survey = st_read("../data/vect/data.gpkg",  layer = "njs_survey")
+survey = st_read("../data/vect/data.gpkg",  layer = "njs_survey", quiet = TRUE)
 
 # load sites data
 sites = readRDS("../data/tab/njs_sites_LONG_SF.rds")
 
 # filter Bronze Age sites
-sites_ba = sites %>% filter(id == "NJS_1_0_0")
+sites_ba = sites %>% filter(time_start == -1400)
 
 # filter iron age sitees
 sites_ia = sites %>% filter(time_start == -900)
@@ -42,7 +54,7 @@ map_ia = tm_shape(sites_ia) +
 tmap_arrange(map_ba,map_ia, nrow = 1)
 ```
 
-Calculate Grid
+### Grid
 
 ```{r}
 
@@ -60,7 +72,7 @@ tm_legend()
 
 ```
 
-Create Distance Matrix
+### Create Distance Matrix
 
 ```{r}
 
@@ -76,19 +88,19 @@ d_ia[1:5,1:5]
 
 ```
 
-Potential
+### Function
 
 Model interaction
 
 ```{r}
 
-plot_inter(fun = "e", span = 5000, beta = 2, limit = 8000)
+plot_inter(fun = "e", span = 2000, beta = 2, limit = 5000)
 
 
 
 ```
 
-Compute Potential
+### Compute Potential
 
 ```{r}
 
@@ -98,7 +110,7 @@ grid$pot_ba <- potential(x = sites_ba,
                          d = d_ba,
                          var = "size_ha", 
                          fun = "e",
-                         span = 5000, 
+                         span = 2000, 
                          beta = 2
                          )
 
@@ -108,24 +120,10 @@ grid$pot_ia <- potential(x = sites_ia,
                          d = d_ia,
                          var = "size_ha", 
                          fun = "e",
-                         span = 5000, 
+                         span = 2000, 
                          beta = 2
                          )
 
-
-```
-
-Plot
-
-```{r}
-
-pot_ba = tm_shape(grid) +
- tm_symbols(size = "pot_ba") 
-
-pot_ia = tm_shape(grid) +
- tm_symbols(size = "pot_ia") 
-
-tmap_arrange(pot_ba,pot_ia, nrow = 1)
 
 ```
 
@@ -145,40 +143,59 @@ equipot_ia =  equipotential(x = grid,
                           )
 
 ba = tm_shape(equipot_ba) +
-  tm_polygons(col = "center")
+  tm_polygons(col = "center") +
+  tm_layout(title = "Bronze Age")
 
 ia = tm_shape(equipot_ia) +
-  tm_polygons(col = "center")
+  tm_polygons(col = "center") +
+  tm_layout(title = "Iron Age")
 
 tmap_arrange(ba,ia)
 ```
 
-As above but normalized
+### Automate for all periods - TO DO
 
 ```{r}
+#| eval: false
+#| echo: false
 
-grid$pot_ba2 <- 100 * grid$pot_ba / max(grid$pot_ba)
+# split sites into list with elements by time blocks
+sites_ls = split(sites, sites$time_start)
 
-grid$pot_ia2 <- 100 * grid$pot_ia / max(grid$pot_ia)
+# calculate grid for with resolution 250 m
+grid = create_grid(x = sites, res = 500)
 
-equipot_ba =  equipotential(x = grid, 
-                          var = "pot_ba2", 
-                          breaks = 50,
-                          mask = survey
-                          )
+# calculate distance matrix for every element in the list
+result = list()
 
-equipot_ia =  equipotential(x = grid, 
-                          var = "pot_ia2", 
-                          nclass = 2,
-                          mask = survey
-                          )
+for (i in 1:length(sites_ls)){
+  
+  dm = create_matrix(x = sites_ls[[i]], y = grid)
+  
+  result[[i]] = dm
+}
 
-ba = tm_shape(equipot_ba) +
-  tm_polygons(col = "center")
+# or 
+result  = lapply(sites_ls, create_matrix, grid)
 
-ia = tm_shape(equipot_ia) +
-  tm_polygons(col = "center")
+new = list()
 
-tmap_arrange(ba,ia)
+# compute potential
+
+for (i in 1:length(result)){
+
+  for (j in 1:length(sites_ls)){
+    
+    potential(x = sites_ls[[j]], 
+              y = grid, 
+              d = result[[i]],
+              var = "size_ha", 
+              fun = "e",
+              span = 2000, 
+              beta = 2
+              )
+    
+  }
+}
 
 ```

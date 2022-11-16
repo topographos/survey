@@ -26,11 +26,13 @@ The following notebooks are created using Quarto
  * [Nearest Neighbor](https://topographos.github.io/survey/04-point-pattern/nearest-neighbour.html) 
  
 5. Index
+  
+ * [Spatial Gini](https://topographos.github.io/survey/08-spatial-gini/sp-gini.html)
 
  * SPAG
 
-7. Space-Time
+7. [Space-Time]
 
 6. Interaction
 
-* Potential Model
+* [Potential Model](https://topographos.github.io/survey/07-potential/potential.html)

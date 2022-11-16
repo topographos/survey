@@ -3,24 +3,27 @@ library(sf)
 library(dplyr)
 library(tidyr)
 library(ggplot2)
-
+library(sp)
+library(gdistance)
+library(maptools)
+library(rgeos)
 # clear env 
 
 # import SPAG functions ----
 
-source("func/site_category.R")
-source("func/SPAG.R")
+source("./func/site_category.R")
+source("./func/SPAG.R")
 
 # DATA ----
 
 # load survey extent as sf
-survey = st_read("data/vect/data.gpkg", layer = "lcp_survey") %>% st_as_sfc()
+survey = st_read("./data/vect/data.gpkg", layer = "lcp_survey") %>% st_as_sfc()
 
 # create sp
 survey_sp = as(survey,"Spatial")
 
 # load site data
-sites = readRDS("data/tab/lcp_sites_LONG_SF.rds")
+sites = readRDS("./data/tab/point_pattern.rds")
 
 # prepare for analysis
 
@@ -41,7 +44,7 @@ sites_df = sites %>%
     lat = st_coordinates(sites)[,2],
     pop = round(size_ha * 100),
     category = category,
-    period = as.factor(time_start)
+    period = as.factor(period)
   ) %>% 
   as.data.frame()
 

@@ -3,6 +3,10 @@ library(sf)
 library(dplyr)
 library(tidyr)
 library(ggplot2)
+library(sp)
+library(gdistance)
+library(maptools)
+library(rgeos)
 
 # clear env 
 
@@ -19,9 +23,10 @@ source("func/site_category.R")
 
 st_layers("data/vect/data.gpkg")
 
-#sites_raw = st_read("data/vect/data.gpkg", layer = "tbs_sites_point")
 
-sites_raw = readRDS("data/tab/njs_sites_LONG_SF.rds")
+sites_raw = readRDS("data/tab/point_pattern.rds")
+
+plot(sites_raw)
 
 survey = st_read("data/vect/data.gpkg", layer = "njs_survey")
 
@@ -34,23 +39,24 @@ sites = site_category(sites_raw, "size_ha")
 
 # 2: select the column into right order: id, size_ha, category
 sites = sites %>%
-  #dplyr::filter(period == "Iron Age") %>%
-  dplyr::select(id,size_ha, time_start, category) %>%
+  dplyr::select(id,size_ha, period, category) %>%
   relocate(geometry, .after = last_col())
 
 # 2.1 Make a subset for one period 
 
 sites_ia = sites %>%
-  dplyr::filter(period == "Iron Age") %>%
+  dplyr::filter(period == "Random") %>%
   dplyr::select(id,size_ha, period, category) %>%
-  relocate(geom, .after = last_col())
+  relocate(geometry, .after = last_col())
 
 
 # 3: compute agricultural zones
 
-agr_zones_df = calc_agr_zones_df(data = sites, size = "size_ha", h_per_person = 3)
+agr_zones_df = calc_agr_zones_df(data = sites_ia, size = "size_ha", h_per_person = 2)
 
-agr_zones_sf = calc_agr_zones_sf(data = sites, size = "size_ha", h_per_person = 3)
+agr_zones_sf = calc_agr_zones_sf(data = sites, size = "size_ha", h_per_person = 2)
+
+plot(agr_zones_sf$geometry)
 
 # coverage index -----
 
@@ -63,7 +69,7 @@ i.cov.ia = calc_cov_index(data = sites_ia,
 
 ##  multipe periods, loop over a list of data frames
 
-sites_list = split(sites, sites$time_start)
+sites_list = split(sites, sites$period)
 
 i.cov = sapply(sites_list, calc_cov_index, size = "size_ha", category = "category",h_per_person = 2, total = TRUE)
 

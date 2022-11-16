@@ -32,6 +32,46 @@ library(sf)
 library(dplyr)
 library(tidyr)
 library(ggplot2)
+library(tmap)
+library(sp)
+
+```
+
+
+
+Load SPAG Function
+
+```{r}
+
+source("func/calc_agr_zones_df.R")
+source("func/calc_agr_zones_sf.R")
+source("func/calc_coverage_index.R")
+source("func/calc_distance_index.R")
+source("func/calc_overlap_index.R")
+source("func/site_category.R")
+
+```
+
+```{r}
+# 1: add category column
+
+sites = site_category(clust, "size_ha")
+
+# 2: select the column into right order: id, size_ha, category
+sites = sites %>%
+  dplyr::select(id,size_ha, period, category) %>%
+  relocate(geom, .after = last_col())
+
+head(sites)
+```
+
+```{r}
+
+agr_zones_df = calc_agr_zones_df(data = sites, size = "size_ha", h_per_person = 3)
+
+agr_zones_sf = calc_agr_zones_sf(data = sites, size = "size_ha", h_per_person = 1)
+
+plot(agr_zones_sf)
 
 ```
 

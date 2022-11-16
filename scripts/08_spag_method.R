@@ -6,7 +6,7 @@ library(tidyr)
 library(ggplot2)
 library(gdistance)
 library(rgeos)
-install.packages("gdistance")
+
 # clear env 
 
 # import SPAG functions ----
