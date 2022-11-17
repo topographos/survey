@@ -35,7 +35,7 @@ Data
 
 ```{r}
 # load data
-sites = readRDS("../data/tab/njs_sites_LONG_SF.rds")
+sites = readRDS("../data/tab/lcp_sites_LONG_SF.rds")
 ```
 
 Count sites by Time Block
@@ -146,7 +146,7 @@ lcp_persistence = readRDS("../data/tab/lcp_persistence.rds") %>%
   filter(time_start > -2000)
 
 # get the positive pct change
-per_change = njs_persistence %>% 
+per_change = lcp_persistence %>% 
   filter(pct_change > 0)
 
 # create plot
