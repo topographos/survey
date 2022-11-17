@@ -36,7 +36,7 @@ The following notebooks are created using Quarto
  * [SPAG - LCP](https://topographos.github.io/survey/05-spag/spag_lcp.html)
   
 
-7. [Space-Time]
+7. Space-Time
 
 6. Interaction
 
