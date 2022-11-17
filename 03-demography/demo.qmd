@@ -9,6 +9,7 @@ format:
 editor: visual
 execute: 
   warning: false
+theme: journal
 ---
 
 # Intro

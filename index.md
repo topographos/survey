@@ -21,9 +21,13 @@ The following notebooks are created using Quarto
 
 4. *Point Pattern*
 
- * Density
+ * Density - Kernel Smoothing and Diffusion Smoothing
+ 
+ * Density - Largest Empty Circle
  
  * [Nearest Neighbor](https://topographos.github.io/survey/04-point-pattern/nearest-neighbour.html) 
+ 
+ * Location Characterization
  
 5. Index
   
@@ -36,7 +40,7 @@ The following notebooks are created using Quarto
  * [SPAG - LCP](https://topographos.github.io/survey/05-spag/spag_lcp.html)
   
 
-7. Space-Time
+7. [Space-Time](https://topographos.github.io/survey/06-space-time/space-time.html)
 
 6. Interaction
 
