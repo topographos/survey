@@ -31,7 +31,7 @@ The following notebooks are created using Quarto
 
  * [SPAG - method](https://topographos.github.io/survey/05-spag/spag_index.html)
  
- * [SPAG - NJS](https://topographos.github.io/survey/05-spag/spag_nj.html)
+ * [SPAG - NJS](https://topographos.github.io/survey/05-spag/spag_njs.html)
  
  * [SPAG - LCP](https://topographos.github.io/survey/05-spag/spag_lcp.html)
   
