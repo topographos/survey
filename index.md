@@ -29,7 +29,12 @@ The following notebooks are created using Quarto
   
  * [Spatial Gini](https://topographos.github.io/survey/08-spatial-gini/sp-gini.html)
 
- * SPAG
+ * [SPAG - method](https://topographos.github.io/survey/05-spag/spag_index.html)
+ 
+ * [SPAG - NJS](https://topographos.github.io/survey/05-spag/spag_nj.html)
+ 
+ * [SPAG - LCP](https://topographos.github.io/survey/05-spag/spag_lcp.html)
+  
 
 7. [Space-Time]
 

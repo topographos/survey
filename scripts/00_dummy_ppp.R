@@ -45,7 +45,7 @@ regular = regular[,c(1,3,2,4)]
 
 set.seed(225)
 
-hexagonal  = st_sample(survey, 83, type = "hexagonal") %>% 
+hexagonal  = st_sample(survey, 82, type = "hexagonal") %>% 
   st_as_sf() %>% 
   rename(geometry = x)
 
@@ -53,7 +53,7 @@ hexagonal  = st_sample(survey, 83, type = "hexagonal") %>%
 plot(hexagonal)
 
 # add id column
-hexagonal$id = 1:84
+hexagonal$id = 1:83
 
 # add period column
 hexagonal$period = "Hexagonal"
@@ -66,7 +66,7 @@ hexagonal = hexagonal[,c(1,3,2,4)]
 
 # RANDOM ----
 
-set.seed(225)
+set.seed(300)
 
 random  = st_sample(survey, 83, type = "random")  %>% 
   st_as_sf() %>% 
@@ -91,13 +91,13 @@ random = random[,c(1,3,2,4)]
 
 set.seed(225)
 clust = sp::spsample(as(survey, "Spatial"), 83, type = "clustered",
-                     nclusters = 10)
+                     nclusters = 8)
 
 clust = st_as_sf(clust)
 plot(clust)
 
 # add id column
-clust$id = 1:72
+clust$id = 1:77
 
 # add period column
 clust$period = "Clustered"
@@ -110,7 +110,7 @@ clust = clust[,c(1,3,2,4)]
 
 # COMBINE ----
 
-point_pattern = rbind(regular, hexagonal, random, clust)
+point_pattern = rbind(regular, random, clust, hexagonal)
 
 saveRDS(point_pattern, "data/tab/point_pattern.rds")
 

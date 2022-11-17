@@ -7,6 +7,7 @@ library(sp)
 library(gdistance)
 library(maptools)
 library(rgeos)
+library(tmap)
 
 # clear env 
 
@@ -39,24 +40,36 @@ sites = site_category(sites_raw, "size_ha")
 
 # 2: select the column into right order: id, size_ha, category
 sites = sites %>%
-  dplyr::select(id,size_ha, period, category) %>%
+  dplyr::select(id,size_avg, period, category) %>%
   relocate(geometry, .after = last_col())
+
+# add average size column
+
+head(sites, 1)
 
 # 2.1 Make a subset for one period 
 
 sites_ia = sites %>%
-  dplyr::filter(period == "Random") %>%
-  dplyr::select(id,size_ha, period, category) %>%
+  dplyr::filter(period == "Hexagonal") %>%
+  dplyr::select(id,size_avg, period, category) %>%
   relocate(geometry, .after = last_col())
 
 
 # 3: compute agricultural zones
 
-agr_zones_df = calc_agr_zones_df(data = sites_ia, size = "size_ha", h_per_person = 2)
+agr_zones_df = calc_agr_zones_df(data = sites_ia, size = "size_avg", h_per_person = 2)
 
-agr_zones_sf = calc_agr_zones_sf(data = sites, size = "size_ha", h_per_person = 2)
+agr_zones_sf = calc_agr_zones_sf(data = sites, size = "size_avg", h_per_person = 2)
 
 plot(agr_zones_sf$geometry)
+
+tm_shape(agr_zones_sf) +
+  tm_borders() +
+  tm_facets(by = "period",free.coords = FALSE) +
+  tm_shape(sites) +
+  tm_dots()+
+  tm_facets(by = "period",free.coords = FALSE) +
+  tm_layout(inner.margins = 0.1)
 
 # coverage index -----
 
@@ -70,6 +83,8 @@ i.cov.ia = calc_cov_index(data = sites_ia,
 ##  multipe periods, loop over a list of data frames
 
 sites_list = split(sites, sites$period)
+
+
 
 i.cov = sapply(sites_list, calc_cov_index, size = "size_ha", category = "category",h_per_person = 2, total = TRUE)
 
@@ -121,7 +136,7 @@ SPAG = merge(i.cov.df,i.dist.df) %>%
   merge(i.over.df) %>% 
   mutate(
     i.spag = i.cov * i.dist * i.over,
-    period = as.numeric(period)
+    period = period
   )
 
 SPAG_long = SPAG %>% 

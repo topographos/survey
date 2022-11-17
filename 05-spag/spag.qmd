@@ -37,8 +37,6 @@ library(sp)
 
 ```
 
-
-
 Load SPAG Function
 
 ```{r}

@@ -1,0 +1,200 @@
+---
+title: "SPAG - NJS Survey"
+author:
+  - name: Michal Michalski
+    affiliations:
+      - Durham University
+abstract: "SPAG Index of Spatial Agglomeration notebook"
+date: 2022-11-16
+date-format: long
+number-sections: false
+format:
+  html:
+    toc: true
+    toc-location: right
+    code-fold: true
+    code-overflow: wrap
+editor: visual
+execute: 
+  warning: false
+---
+
+# Method
+
+## R packages
+
+```{r}
+#| warning: false
+library(sf)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(tmap)
+library(sp)
+
+```
+
+## SPAG Functions
+
+```{r}
+
+source("../func/calc_agr_zones_df.R")
+source("../func/calc_agr_zones_sf.R")
+source("../func/calc_coverage_index.R")
+source("../func/calc_distance_index.R")
+source("../func/calc_overlap_index.R")
+source("../func/site_category.R")
+
+```
+
+## Data
+
+```{r}
+
+sites_raw = readRDS("../data/tab/njs_sites_LONG_SF.rds")
+
+survey = st_read("../data/vect/data.gpkg", layer = "njs_survey", quiet = TRUE)
+
+```
+
+## Plot
+
+```{r}
+tm_shape(survey) +
+  tm_borders(lty = "dashed") +
+tm_shape(sites_raw) +
+  tm_dots(size = 0.1) +
+  tm_facets(by = "time_start",free.coords = FALSE) +
+tm_layout(inner.margins = 0.1)
+```
+
+## Tidy
+
+```{r}
+
+# prepare for analysis
+# 1: add category column
+sites = site_category(sites_raw, "size_ha")
+
+# 2: select the column into right order: id, size_ha, category
+sites = sites %>%
+  dplyr::select(id,size_ha, time_start, category) %>%
+  relocate(geometry, .after = last_col())
+
+# 3: create list of multiple periods, loop over a list of data frames
+sites_list = split(sites, sites$time_start)
+
+```
+
+## Agricultural Sustaining Areas
+
+Compute
+
+```{r}
+agr_zones_sf = calc_agr_zones_sf(data = sites, size = "size_ha", h_per_person = 2)
+```
+
+Plot
+
+```{r}
+tm_shape(agr_zones_sf) +
+  tm_borders() +
+  tm_facets(by = "time_start",free.coords = FALSE) +
+  tm_layout(inner.margins = 0.1) +
+  tm_shape(survey) +
+  tm_borders(lty = "dashed")
+```
+
+# Index
+
+**SPAG: Index of Spatial Agglomeration**
+
+$$
+SPAG = I_\text{coverage} * I_\text{distance} * I_\text{overlap}
+$$ \## Coverage
+
+$$
+I_\text{coverage} = {\Sigma P_i \over P_r}
+$$
+
+```{r}
+
+i.cov = sapply(sites_list, calc_cov_index, size = "size_ha", category = "category",h_per_person = 2, total = TRUE)
+
+i.cov.df = as.data.frame(i.cov)
+
+i.cov.df = cbind(period = rownames(i.cov.df),i.cov.df)
+
+rownames(i.cov.df) = NULL
+
+```
+
+## Distance
+
+$$
+I_\text{distance} = {\Sigma_i \Sigma_j d_{ij}/ k \over \Sigma_i \Sigma_j \hat d_{ij} / k  }
+$$
+
+```{r}
+i.dist = sapply(sites_list, calc_dist_index, survey = survey, total = TRUE)
+
+i.dist.df = as.data.frame(i.dist)
+
+i.dist.df = cbind(period = rownames(i.dist.df),i.dist.df)
+
+rownames(i.dist.df) = NULL
+```
+
+## Overlap
+
+$$
+I_{overlap} = {P(\cup P_i) \over \Sigma P_i}
+$$
+
+```{r}
+
+i.over = sapply(sites_list, calc_over_index, size = "size_ha", h_per_person = 2, total = TRUE)
+
+i.over.df = as.data.frame(i.over)
+
+i.over.df = cbind(period = rownames(i.over.df),i.over.df)
+
+rownames(i.over.df) = NULL
+```
+
+## SPAG
+
+```{r}
+# SPAG ----
+
+SPAG = merge(i.cov.df,i.dist.df) %>% 
+  merge(i.over.df) %>% 
+  mutate(
+    i.spag = i.cov * i.dist * i.over,
+    period = as.numeric(period)
+  )
+
+SPAG_long = SPAG %>% 
+  tidyr::pivot_longer(!period, names_to = "index", values_to = "value")
+
+knitr::kable(format(SPAG, digits = 2))
+
+```
+
+Plot
+
+```{r}
+library(hrbrthemes)
+
+ggplot() +
+  geom_line(data = SPAG_long, mapping = aes(x = period, y = value, color = index)) +
+  scale_color_manual(labels = c("coverage", "distance", "overlap","total"),
+                       values = c("#FAEFD1", "#046C9A", "#C93312", "#000000")) +
+  scale_x_continuous(n.breaks = 10) +
+  labs(title = "NJS Survey from 3100BC to 650AC",
+       subtitle = "0 (agglomeration) to 1 (unifrom distribution)",
+       caption = "low distance values mean sites are in spatial proximity, high values equal distribution
+                  low overlap values mean sites  overlap and agglomerate, high values reflect uniform distribution "
+       ) + 
+  theme_ipsum()
+```
