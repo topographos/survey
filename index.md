@@ -43,8 +43,8 @@ The following notebooks are created using Quarto
  * [SPAG - LCP](https://topographos.github.io/survey/05-spag/spag_lcp.html)
   
 
-7. [Space-Time](https://topographos.github.io/survey/06-space-time/space-time.html)
+6. [Space-Time](https://topographos.github.io/survey/06-space-time/space-time.html)
 
-6. Interaction
+7. Interaction
 
 * [Potential Model](https://topographos.github.io/survey/07-potential/potential.html)
