@@ -27,7 +27,10 @@ The following notebooks are created using Quarto
  
  * [Nearest Neighbor](https://topographos.github.io/survey/04-point-pattern/nearest-neighbour.html) 
  
+ * Clustering
+ 
  * Location Characterization
+ 
  
 5. Index
   
