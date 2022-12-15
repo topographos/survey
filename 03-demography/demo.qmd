@@ -36,7 +36,7 @@ Data
 
 ```{r}
 # load data
-sites = readRDS("../data/tab/lcp_sites_LONG_SF.rds")
+sites = readRDS("../data/tab/njs_sites_LONG_SF.rds")
 ```
 
 Count sites by Time Block
@@ -102,6 +102,149 @@ Save
 ```{r}
 # save
 write_rds(df_wide,"../data/tab/lcp_persistence.rds")
+
+
+```
+
+Prepare data for colocation analysis
+
+```{r}
+
+head(df)
+
+df = df %>% 
+  filter(change != "forward" & change != "removed") %>% 
+  mutate(time_start = as.numeric(as.character(time_start)))
+
+sites_for_join = sites %>% 
+  select(id, size_ha, time_start)
+
+# - 3000 to -2550 - 46 sites - pattern 1
+njs_3000BC = df %>% filter(time_start == -3000)
+
+njs_3000BC = right_join(sites_for_join, njs_3000BC)
+
+njs_3000BC$period = "3000BC to 2550BC"
+
+plot(njs_3000BC$geometry)
+
+# - 2550 to -2000 - 24 sites - pattern 2
+njs_2550BC = df %>% filter(time_start == -2550) 
+
+njs_2550BC = right_join(sites_for_join, njs_2550BC)
+
+njs_2550BC$period = "2550BC to 2000BC"
+
+plot(njs_2550BC$geometry)
+
+# - 2000 to -1500 - 46 sites - pattern 3
+njs_2000BC = df %>% filter(time_start == -2000)
+
+njs_2000BC = right_join(sites_for_join, njs_2000BC)
+
+njs_2000BC$period = "2000BC to 1500BC"
+
+plot(njs_2000BC$geometry)
+
+# - 1500 to -1400 - 3 sites  - pattern 4
+njs_1500BC = df %>% filter(time_start == -1500)
+
+njs_1500BC = right_join(sites_for_join, njs_1500BC)
+
+njs_1500BC$period = "1500BC to 1400BC"
+
+plot(njs_1500BC$geometry)
+
+# - 1400 to -1000 - 33 sites - pattern 5
+njs_1400BC = df %>% filter(time_start == -1400)
+
+njs_1400BC = right_join(sites_for_join, njs_1400BC)
+
+njs_1400BC$period = "1400BC to 1000BC"
+
+plot(njs_1400BC$geometry)
+
+# - 900  to -600  -  83 sites - pattern 6
+njs_900BC = df %>% filter(time_start == -900)
+
+njs_900BC = right_join(sites_for_join, njs_900BC)
+
+njs_900BC$period = "900BC to 600BC"
+
+plot(njs_900BC$geometry)
+
+# - 600 to - 300  - 4 sites -   pattern 7
+njs_600BC = df %>% filter(time_start == -600)
+
+njs_600BC = right_join(sites_for_join, njs_600BC)
+
+njs_600BC$period = "600BC to 300BC"
+
+plot(njs_600BC$geometry)
+
+#- 300 to - 50 - 82 sites - pattern 8
+njs_300BC = df %>% filter(time_start == -300)
+
+njs_300BC = right_join(sites_for_join, njs_300BC)
+
+njs_300BC$period = "300BC to 50BC"
+
+plot(njs_300BC$geometry)
+
+
+#- 50 to 200 - 84 sites - pattern 9
+njs_50BC = df %>% filter(time_start == -50)
+
+njs_50BC = right_join(sites_for_join, njs_50BC)
+
+njs_50BC$period = "50BC to 200BC"
+
+plot(njs_50BC$geometry)
+
+#200 to 300 - 5 sites - pattern 10
+njs_200AC = df %>% filter(time_start == 200)
+
+njs_200AC$period = "200AC to 300AC"
+
+njs_200AC = right_join(sites_for_join, njs_200AC)
+
+plot(njs_200AC$geometry)
+#300 to 400 - 60 sites - pattern 11
+njs_300AC = df %>% filter(time_start == 300)
+
+njs_300AC = right_join(sites_for_join, njs_300AC)
+
+njs_300AC$period = "300AC to 400AC"
+
+plot(njs_300AC$geometry)
+#400 to 600 - 59 sites - pattern 12
+njs_400AC = df %>% filter(time_start == 400)
+
+njs_400AC = right_join(sites_for_join, njs_400AC)
+
+njs_400AC$period = "400AC to 600AC"
+
+plot(njs_400AC$geometry)
+
+njs_sites = bind_rows(njs_3000BC, njs_2550BC, njs_2000BC, njs_1500BC, 
+                      njs_1400BC, njs_900BC, njs_600BC, njs_300BC, njs_50BC, 
+                      njs_200AC, njs_300AC, njs_400AC)
+
+njs_sites = njs_sites[,c(1,2,3,5,6,4)]
+
+st_write(njs_sites,"../data/vect/njs.gpkg", layer = "sites")
+
+library(tmap)
+
+tm_shape(njs_sites) +
+  tm_symbols() +
+  tm_facets(by = "time_start")
+
+
+
+
+
+
 
 ```
 

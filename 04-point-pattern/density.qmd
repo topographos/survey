@@ -1,0 +1,133 @@
+---
+title: "Density Analysis"
+author: "Michal Michalski"
+format: 
+  html:
+    code-fold: true
+    toc: true
+    code-overflow: wrap
+editor: visual
+execute: 
+  warning: false
+---
+
+# Packages
+
+```{r}
+
+library(sf)
+library(tidyverse)
+library(tmap)
+library(ggplot2)
+library(scales)
+library(units)
+library(dbscan)
+
+source("../func/site_category.R")
+
+```
+
+# Framework
+
+# Data
+
+Load sites an survey boundary.
+
+```{r}
+
+st_layers("../data/vect/njs.gpkg")
+
+sites = st_read("../data/vect/njs.gpkg", layer = "sites")
+
+sites = site_category(sites, "size_ha")
+
+sites_ia = sites %>% filter(period == '900BC to 600BC')
+
+survey = st_read("../data/vect/data.gpkg", layer = "njs_survey") %>% st_as_sfc()
+
+```
+
+Map the sites by period
+
+```{r}
+
+tm_shape(survey) +
+  tm_borders() +
+  tm_shape(sites) +
+  tm_symbols() +
+  tm_facets(by="time_start", free.coords = FALSE)
+
+```
+
+```{r}
+
+
+fill2 = c("#ffffd4", "#fed98e", "#fe9929", "#cc4c02")
+fill = c("#ffffcc", "#a1dab4", "#41b6c4", "#225ea8")
+
+ggplot() +
+  geom_sf(data = survey, fill = "gray") +
+  geom_sf(data = sites_ia, aes(size = size_ha, fill = category), pch = 21) +
+  coord_sf(datum = st_crs(sites)) +
+  labs(title = paste("Period: ", sites_ia$period),subtitle = "Text", caption = "Data Source:") +
+  scale_size_continuous(range = c(1,9)) +
+  scale_fill_manual(values = fill,
+                     guide = guide_legend(
+                       title = "Category (Size in Hectars)", 
+                       title.position = 'top',
+                       title.hjust = 0.5,
+                       override.aes = list(size = 6))) +
+  guides(size = "none") + 
+  theme_void() +
+  theme(legend.position = "bottom", legend.direction = "horizontal")
+  
+  
+
+
+```
+
+# Glogal Density
+
+```{r}
+
+survey.area.m = st_area(survey)
+
+survey.area.km = units::set_units(x = survey.area.m, value = km^2)
+
+g.density = nrow(sites_ia) / survey.area.km
+
+g.density = as.numeric(g.density)
+
+```
+
+# Local Density
+
+```{r}
+
+set.seed(665544)
+n <- 100
+x <- cbind(
+  x=runif(10, 0, 5) + rnorm(n, sd = 0.4),
+  y=runif(10, 0, 5) + rnorm(n, sd = 0.4)
+  )
+
+### calculate density
+x = as.matrix(st_coordinates(sites_ia))
+
+
+
+d <- pointdensity(x, eps = 5000, type = "density")
+
+f = pointdensity(x, eps = 5000, type = "frequency")
+
+df <- data.frame (first_column  = d,
+                  second_column = f
+                  )
+
+
+sites_ia$d_freq = pointdensity(st_coordinates(sites_ia), eps = 3000, type = "frequency")
+
+sites_ia$d_dens = pointdensity(st_coordinates(sites_ia), eps = 3000, type = "density")
+
+st_write(sites_ia,"../data/vect/sites_ia.shp")
+```
