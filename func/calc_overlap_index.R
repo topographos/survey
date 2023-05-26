@@ -1,4 +1,4 @@
-calc_over_index = function(data, size, h_per_person, total){
+calc_over_index = function(data, size, person_per_h = 100, h_per_person = 1, total = TRUE){
 
   if (!total) {
 
@@ -21,7 +21,7 @@ calc_over_index = function(data, size, h_per_person, total){
 
   } else {
 
-    agr_area = calc_agr_zones_sf(data = data, size = size, h_per_person)
+    agr_area = calc_agr_zones_sf(data = data, size = size, person_per_h, h_per_person)
 
     agr_area_total = sum(agr_area$agr_area)
 

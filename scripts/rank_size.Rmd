@@ -1,0 +1,242 @@
+---
+title: "Tutorial"
+author: "Alessio Palmisano, Michal Michalski"
+date: "06/12/2019"
+output: html_document
+bibliography: bibliography.bib
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+
+library(sf)
+library(ggplot2)
+library(dplyr)
+library(cowplot)
+```
+
+# Introduction
+
+Modified Tutorial
+
+This document provides a tutorial to run some well-established analytical tools in archaeology to assess regional centralization and settlement hierarchies: site-size histograms, rank-size graphs, A-coefficient, and B-coefficient (@drennan2004comparing; @drennan2008centralized; @crema2013cycles; @palmisano2017confronting).
+
+# Site-size histogram
+
+Histograms of site-size can indicate different tiers in a regional settlement hierarchy in case of multimodal distributions. Instead, if a single site much larger than the other sites, we have a highly centralised system. In this case, the histogram will show an high peak of sites measuring a small size and a single site being much larger than the rest. Here we plot a site-size histogram for the 3rd Millenium sites in NJS survey
+
+We load the sf object of NJS sites:
+
+```{r load data, message=FALSE, warning=FALSE, paged.print=FALSE}
+
+st_layers("../data/vect/njs.gpkg")
+
+sites = st_read("../data/vect/njs.gpkg", layer = "sites")
+
+sites_2550BC = filter(sites, period == "2550BC to 2000BC")
+
+plot(sites_2550BC)
+```
+
+Plot the site-size histogram - base plot
+
+```{r plot}
+hist(sites_2550BC$size_ha, 
+     cex.axis=0.75, 
+     xlab="Estimated size (ha)", 
+     ylab="Site Count",
+     main="NJS Survey", 
+     col="white")
+```
+
+Plot the site-size histogram - ggplot plot
+
+[r - How to align the bars of a histogram with the x axis? - Stack Overflow](https://stackoverflow.com/questions/41486027/how-to-align-the-bars-of-a-histogram-with-the-x-axis/46453008#46453008)
+
+```{r}
+
+ggplot(data = sites_2550BC, mapping = aes(x = size_ha)) +
+  geom_histogram(binwidth = 1, boundary = 0, closed = "left", 
+                 fill = "#53868B") +
+  geom_rug() +
+  geom_vline(aes(xintercept = mean(size_ha)),                       
+             colour = "red", linetype = "dashed") +
+  labs(title = paste0("NJS Survey - ", unique(sites_2550BC$period) ),
+       subtitle = "Site-Size Histogram")+
+  ylab("Count\n") +                                                  
+  xlab("\n Site Size in Hectars") +
+  theme_minimal_hgrid()
+
+
+```
+
+# Rank-size analysis
+
+The classic geographical approach to rank size is to plot the rank of sites against their size on logarithmic axes. Modern urban geographers noted that in well-developed urban systems this produced a straight (or log-normal) line (known as Zipf's law), following the so-called rank size or log-normal rule (where the second ranked site was half the size of the largest, the third ranked sites was one third the size of the largest, and so on). So, in a graph the expected rank-size rule (Zipf's Law) results in a straight line from the upper left to the lower right corner of the plot.
+
+Let us create a Zipf's law for Murlo's territory with the following code:
+
+(this is a theoretical Law - the maximum size is divided by by number of rank e.g. 1,2,3., 4
+
+```{r Zipf law}
+
+njs_ia_zipf =  max(sort(sites_2550BC$size_ha,decreasing = TRUE))/(1:length(sites_2550BC$size_ha))
+
+max(sort(sites_2550BC$size_ha,decreasing = TRUE))
+```
+
+Then, we plot the rank-size graph which shows a primate distribution indicating a highly centralised settlement system in the territory of Murlo.
+
+```{r}
+
+ggplot(data = sites_2550BC) +
+  geom_line(aes(x = log(1:length(sites_2550BC$size_ha)), y = log(sort(sites_2550BC$size_ha,TRUE))), color = "#53868B", size = 1) +
+  geom_point(aes(x = log(1:length(sites_2550BC$size_ha)), y = log(sort(sites_2550BC$size_ha,TRUE))), shape= 22, fill = "#53868B", color = "white", size = 3 ) +
+ labs(title = paste0("NJS Survey - ", unique(sites_2550BC$period) ),
+       subtitle = "Rank-Size Graph")+
+  ylab("Log Size in Hectars\n") +                                                  
+  xlab("\n Log Rank") +
+  geom_line(aes(x = log(1:length(sites_2550BC$size_ha)), y = log(njs_ia_zipf)), linetype = "dashed", color = "#F4A460") +
+  theme_cowplot()
+```
+
+```{r rank-size graph}
+
+plot( x=1:length(sites_2550BC$size_ha),y= sort(sites_2550BC$size_ha,TRUE),type="l",xlab="Log Rank",ylab="Log Size (ha)")
+
+
+plot(log(x=1:length(sites_2550BC$size_ha)),y=log(sort(sites_2550BC$size_ha,TRUE)),type="l",xlab="Log Rank",ylab="Log Size (ha)")
+
+
+lines(log(x=1:length(njs_sites_ia$size_ha)),y=log(sort(njs_sites_ia$size_ha,TRUE)),type="l",xlab="Log Rank",ylab="Log Size (ha)")
+points(log(1:length(njs_sites_ia$size_ha)),log(sort(njs_sites_ia$size_ha,TRUE)),pch=20, cex=1)
+lines(log(1:length(njs_sites_ia$size_ha)),log(njs_ia_zipf),lty=2)
+```
+
+Drennan and Peterson (2004) proposed an A-coefficient in order to establish an index of centralisation. This index calculates the area of the shape of the rank-size curve above and below the Zipf's law (see also @crema2013cycles; @palmisano2017confronting for the application of this method). Hence, the area above the Zipf's law curve and below the observed rank-size curve (A1) will have positive values (convex distribution), and then the area below the Zipf's law curve and above the empirical data (A2) will have negative values (primate distribution).
+
+Now we source the codes in the sub-folder "src" in order to load two functions for calculating the A-coefficient. Courtesy of Enrico Crema (Cambridge University). See @crema2013cycles.
+
+```{r functions}
+source("src/a12coeff.R") 
+source("src/bootStrap_acoeff12.R") 
+```
+
+We calculate the observed A-coefficient of the primate distribution:
+
+```{r A-coefficient}
+a12coeff(njs_sites_ia$size_ha,plotting=FALSE)
+
+```
+
+We calculate the observed A-coefficientfor all time blocks
+
+```{r A-coefficient}
+
+sites_list = split(sites, sites$time_start)
+
+result_list = list()
+
+for(i in 1:length(sites_list)){
+
+a12c = a12coeff(sites_list[[i]]$size_ha,plotting=FALSE)
+
+result_list[[i]] = a12c
+  
+}
+
+a12coeff_df = bind_rows(result_list)
+
+a12coeff(sites$size_ha,plotting=FALSE)
+
+
+
+```
+
+The resulting observed A-coefficient is -1.29. This indicates a strong primate distribution.
+
+In addition, a bootstrap statistical technique has been enabled to test the statistical significance of the A values (cf. @drennan2004comparing, 539-543). This technique calculates the 95% confidence interval of A values by resampling with replacement the observed settlement sizes with 1000 samples randomly selected. By way of illustration, the rank‐size of a putative XTENT defined territory with 20 sites would be repeated with 1,000 random samples of 20 sites that can be compared with the observed original dataset. In this way, alternative patterns can be tested against the observed patterns. In each graph, the simulated samples (grey lines) are plotted against the observed patterns (dark line), such that a narrower envelope emerges for more certain outcomes and a wider envelope for less certain outcomes.
+
+Here we plot the observed rank-size distribution with the other 999 bootstrapped samples:
+
+```{r bootstrap}
+#create a bootstrap sample 
+random_data<-sample(Murlo$SizeHa,71,replace=TRUE)
+random_data<-as.data.frame(random_data)
+colnames(random_data)[1]<-"size"
+random_data$sample <- 1
+
+# now run 1000 times, WHILE COMBINE ALL INTO A SINLGE DATAFRAME WHERE EACH SAMPLE IS NUMBERED IN THE SAMPLE COLUMN
+nsim<-1000
+for(a in 2:nsim) {
+  cat(paste(a,"; ",sep="")) 
+  random<- sample(Murlo$SizeHa,71,replace=TRUE)
+  random_n<-as.data.frame(random)
+  colnames(random_n)[1]<-"size"
+  random_n$sample<-a 
+  random_data <- rbind(random_data, random_n)
+}
+
+#Plot the graph 
+plot(log(x=1:length(Murlo$SizeHa)),y=log(sort(Murlo$SizeHa,TRUE)),type="l",xlab="Log Rank",ylab="Log Size (ha)")
+mtext("c",1, 1, adj=-0.05, font=2, cex=0.75)
+
+#Plot the first sample
+lines(log(x=1:length(Murlo$SizeHa)),y=log(sort(random_data$size[random_data$sample==1],TRUE)),type="l",xlab="Rank",ylab="Size (ha)", col="gray")
+
+#add the other 999 samples in order to generate a grey envelope
+i<-1
+for (i in 2:nsim) {
+  lines(log(x=1:length(Murlo$SizeHa)),y=log(sort(random_data$size[random_data$sample==i],TRUE)),type="l",xlab="Rank",ylab="Size (ha)", col="gray")
+}
+
+#Plot the graph 
+lines(log(x=1:length(Murlo$SizeHa)),y=log(sort(Murlo$SizeHa,TRUE)),type="l",xlab="Log Rank",ylab="Log Size (ha)")
+points(log(1:length(Murlo$SizeHa)),log(sort(Murlo$SizeHa,TRUE)),pch=20, cex=1)
+lines(log(1:length(Murlo$SizeHa)),log(Murlo_zipf),lty=2)
+
+```
+
+Then, we calculate the 95% confidence envelope
+
+```{r bootstrap 95% confidence envelope}
+envelope<-bootStrap_acoeff12(Murlo$SizeHa,nsim=1000, plotting = FALSE) 
+envelope$envA 
+```
+
+The resulting 95% confidence envelope shows A-coefficient values ranging from -2.04 to -0.36. So, the envelope encompasses negative values and suggests that the observed A-coefficient (-1.29) is statistically significant.
+
+# B-coefficient
+
+A further analysis for measuring regional centralisation consists in calculating the density of rural settlement within concentric rings (by number and area) as one moves away from a given urban centre. This exercise allows the calculation of the B-coefficient (see @drennan2008centralized), where the B value ranges between 0 and 1 (0=no centralization at all; 1=maximum centralization). The B-coefficient is calculated as follows. In the strongest possible centralized scenario the innermost ring would contain the 100% of population (or the total estimated settlements size) and the sum of the cumulative proportions would be 100 x 10 (n. of rings) =1000. In a non-centralized settlement system the population would be distributed evenly and each ring would contain the 10% of the polity's population (or total estimated size) and the sum of the cumulative proportion would be 550 (= 10+20+30+40 and so on). The difference between the sum of cumulative proportions with maximum centralization (1000) and no centralization at all (550) by using 10 concentric rings is 450. Therefore, the B-coefficient is calculated by subtracting 550 to the sum of the observed cumulative proportion and dividing the remainder by 450.
+
+Here we load load the results stored in a spreadsheet:
+
+```{r stored results}
+murlo<-read.csv(file="csv/murlo_centralization.csv", header=TRUE, sep=",")
+print(murlo)
+```
+
+The csv file shows the proportion of the total estimated size within each concentric ring ("donut") moving away from Murlo at a fixed distance of 1 km between rings. So, the ring n. 1 is the innermost ring while the n. 10 is the outermost one. The csv file shows the results for the Iron Age, the Archaic and the Post-Archaic period. Here we will focus on the Archaic period's values defined by the columns "Ring.1", "size.1", "size.proportion.1", etc. You can see that the sum of the observed cumulative proportion of the estimated settlements size is 926.71
+
+So we calculate the B-coefficient via the following formula: (926.71-550)/450. The resulting B-coefficient is 0.837, which indicates a highly centralised settlement system.
+
+Here we plot the estimated size proportion in each concentric ring (donut) for the Archaic period:
+
+```{r B-coefficient plot}
+plot(murlo$size.proportion.1, xlab="", ylab="", xlim=c(1,10), xaxt="n", yaxt="n", col="black", type="l")
+axis(2, at=seq(0,100,20), labels = seq(0,100,20), lwd=1, line=0, las=2, cex.axis=0.8, mgp=c(0,0.8,0))
+mtext(2,text="Estimated size %", line=2, cex = 1)
+abline(v=seq(1,10,1), lty="dotted", col="grey")
+text(x=5, y=99, labels="Murlo", font=2, cex=1.5, adj=c(0,0.7))
+xticklabs <- seq(1,10,by=1)
+axis(side=1, at=xticklabs, cex.axis=1, las=1)
+mtext("n. ring",1, 1.8, at=5, adj=0, font=1, cex=1)
+```
+
+Now we have done! Enjoy the other R scripts in order to reproduce the analyses and figures of the paper.
+
+## References

@@ -13,8 +13,8 @@ calc_agr_zones_df = function(data, size, h_per_person){
   zones$agr_area = as.numeric(st_area(zones))
 
   zones = sf::st_drop_geometry(zones)
-
-  zones = zones[,c(1,2,4,5,3)]
+  
+  zones = zones[,c(1,2,4,3)]
 
   return(zones)
 

@@ -24,6 +24,10 @@ Packages
 library(sf)
 library(spatstat)
 library(maptools)
+library(terra)
+library(mapiso)
+library(patchwork)
+library(units)
 
 
 ```
@@ -36,10 +40,18 @@ Read sites and survey extent
 
 # load data
 # sites
-sites = readRDS("../data/tab/lcp_sites_LONG_SF.rds")
+sites = st_read("../data/vect/njs.gpkg", layer = "sites")
+
+sites200BC = sites %>% filter(time_start == -2000)
+
+sites1400BC = sites %>% filter(time_start == -1400)
+
+sites1500BC = sites %>% filter(time_start == -1500)
+
+sites900BC = sites %>% filter(time_start == -900)
 
 # survey extent
-survey = st_read("../data/vect/data.gpkg", layer = "lcp_survey", quiet = TRUE ) %>%
+survey = st_read("../data/vect/data.gpkg", layer = "njs_survey", quiet = TRUE ) %>%
   st_buffer(1000) %>% 
   st_as_sfc()
 
@@ -71,6 +83,35 @@ survey.ppp = ppp( x = sites_coords[,1],
                   marks = marks_df,
                   window = survey.win)
 
+# 2000BC
+sites2000BC_coords = st_coordinates(sites200BC)
+
+sites2000BC.ppp = ppp( x = sites2000BC_coords[,1], 
+                  y = sites2000BC_coords[,2], 
+                  window = survey.win)
+
+# 1400C
+sites1400BC_coords = st_coordinates(sites1400BC)
+
+sites1400BC.ppp = ppp( x = sites1400BC_coords[,1], 
+                  y = sites1400BC_coords[,2], 
+                  window = survey.win)
+
+# 1500C
+sites1500BC_coords = st_coordinates(sites1500BC)
+
+sites1500BC.ppp = ppp( x = sites1500BC_coords[,1], 
+                  y = sites1500BC_coords[,2], 
+                  window = survey.win)
+
+# 2000BC
+sites900BC_coords = st_coordinates(sites900BC)
+
+sites900BC.ppp = ppp( x = sites900BC_coords[,1], 
+                  y = sites900BC_coords[,2], 
+                  window = survey.win)
+
+
 
 
 ```
@@ -83,5 +124,157 @@ Save
 
 ## save as an R object
 saveRDS(survey.ppp, "../data/tab/lcp_survey_PPP.rds")
+
+```
+
+Distance Maps
+
+```{r}
+
+summary.ppp(sites1400BC.ppp)
+
+summary.ppp(sites2000BC.ppp)
+
+intensity.ppp(sites1400BC.ppp)
+
+?intensity.ppp
+
+
+plot(density.ppp(sites2000BC.ppp))
+
+
+distmap.2000BC = distmap(sites2000BC.ppp)
+
+distmap.1400BC = distmap(sites1400BC.ppp)
+
+distmap.1500BC = distmap(sites1500BC.ppp)
+
+distmap.900BC = distmap(sites900BC.ppp)
+
+
+plot(distmap.2000BC)
+
+plot(distmap.1500BC)
+
+plot(distmap.1400BC)
+
+plot(distmap.900BC)
+
+```
+
+Rings
+
+```{r}
+
+
+breaks = seq(from = 1, to = 10000, by = 1000)
+# create rings
+rings.2000BC = mapiso(rast(distmap.2000BC),breaks = breaks) %>% st_set_crs(st_crs(sites))
+
+rings.1400BC = mapiso(rast(distmap.1400BC),breaks = breaks) %>% st_set_crs(st_crs(sites))
+
+rings.1500BC = mapiso(rast(distmap.1500BC),breaks = breaks) %>% st_set_crs(st_crs(sites))
+
+rings.900BC = mapiso(rast(distmap.900BC),breaks = breaks) %>% st_set_crs(st_crs(sites))
+
+tmap_mode("plot")
+m1 = tm_shape(rings.2000BC) +
+      tm_polygons(col = "isomax")
+
+m2 = tm_shape(rings.1500BC) +
+      tm_polygons(col = "isomax")
+
+m3 = tm_shape(rings.1400BC) +
+      tm_polygons(col = "isomax")
+
+m4 = tm_shape(rings.900BC) +
+      tm_polygons(col = "isomax")
+
+tmap_arrange(m1,m2,m3,m4)
+
+```
+
+```{r}
+
+
+trans_2000_1500 = st_join(rings.2000BC,sites1500BC) %>% 
+  group_by(id.x) %>% 
+  summarise(
+    total_size = sum(size_ha)
+  ) %>% 
+  st_drop_geometry()
+
+trans_1500_1400 = st_join(rings.1500BC,sites1400BC) %>% 
+  group_by(id.x) %>% 
+  summarise(
+    total_size = sum(size_ha)
+  ) %>% 
+  st_drop_geometry()
+
+
+trans_1400_900 = st_join(rings.1400BC,sites900BC) %>% 
+  group_by(id.x) %>% 
+  summarise(
+    total_size = sum(size_ha)
+  ) %>% 
+  st_drop_geometry()
+
+trans_1400_900 = st_join(rings.1400BC,sites900BC) %>% 
+  group_by(id.x) %>% 
+  summarise(
+    total_size = sum(size_ha)
+  ) %>% 
+  st_drop_geometry()
+
+
+
+```
+
+Plot
+
+```{r}
+
+g1 = ggplot(data = trans_2000_1500) +
+  geom_col(aes(x = factor(id.x), y = total_size), fill = "salmon") +
+  labs(title = "1500") +
+  theme_minimal_vgrid()
+
+g2 = ggplot(data = trans_1500_1400) +
+  geom_col(aes(x = factor(id.x), y = total_size), fill = "salmon") +
+  labs(title = "1400") +
+  theme_minimal_vgrid()
+
+
+g3 = ggplot(data = trans_1400_900) +
+  geom_col(aes(x = factor(id.x), y = total_size), fill = "salmon") +
+  labs(title = "900") +
+  theme_minimal_vgrid()
+
+g1 / g2 / g3
+```
+
+Density
+
+```{r}
+
+  survey_area = st_area(survey)
+  survey_area =  units::set_units(survey_area, km^2)
+  
+njs_density = sites %>% 
+  st_drop_geometry() %>% 
+  group_by(time_start) %>% 
+    summarise(
+      n = n(),
+      area_total = sum(size_ha)
+    )
+
+max_sites = sites %>% 
+  group_by(time_start) %>%
+  slice_max(size_ha)
+ 
+    
+
+ggplot(data = njs_density) +
+ geom_col(mapping = aes(x = as.factor(time_start), y = dens))
 
 ```

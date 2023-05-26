@@ -36,7 +36,7 @@ Data
 
 ```{r}
 # load data
-sites = readRDS("../data/tab/njs_sites_LONG_SF.rds")
+sites = readRDS("../data/tab/tbs_sites_LONG_SF.rds")
 ```
 
 Count sites by Time Block
@@ -101,7 +101,7 @@ Save
 
 ```{r}
 # save
-write_rds(df_wide,"../data/tab/lcp_persistence.rds")
+write_rds(df_wide,"../data/tab/tbs_persistence.rds")
 
 
 ```
@@ -306,4 +306,45 @@ ggplot() +
   hrbrthemes::theme_ipsum() +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
 
+```
+
+## TBS Survey
+
+```{r}
+# read data
+# read data
+lcp_persistence = readRDS("../data/tab/lcp_persistence.rds") %>% 
+  mutate( time_start = as.numeric(as.character(time_start))) %>% 
+  filter(time_start >= -3100)
+
+# get the positive pct change
+per_change = lcp_persistence %>% 
+  filter(pct_change > 0)
+
+# create plot
+ggplot() +
+  geom_col(lcp_persistence, mapping = aes(x = time_start, y = total), alpha = 0.2, color = NA) +
+  geom_vline(data = per_change, aes(xintercept = time_start), linetype="dotted") +
+  geom_text(data = per_change, 
+            aes(x = time_start, 
+                y = 60, 
+                label = new_sites),
+            color = "red") +
+  scale_x_continuous(n.breaks = 40) +
+  hrbrthemes::theme_ipsum() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+```
+
+```{r}
+
+df_change_only = df_wide %>% 
+  mutate(time_start = as.numeric(as.character(time_start))) %>% 
+    filter(pct_change != 0)
+
+# join
+
+final = sites %>% filter(time_start %in% df_change_only$time_start) %>% 
+select(-to,-from)
+
+st_write(final,"../data/vect/tbs/tbs.gpkg", layer = "sites")
 ```

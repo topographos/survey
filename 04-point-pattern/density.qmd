@@ -22,6 +22,7 @@ library(ggplot2)
 library(scales)
 library(units)
 library(dbscan)
+library(spatstat)
 
 source("../func/site_category.R")
 
@@ -42,6 +43,8 @@ sites = st_read("../data/vect/njs.gpkg", layer = "sites")
 sites = site_category(sites, "size_ha")
 
 sites_ia = sites %>% filter(period == '900BC to 600BC')
+
+sites_ba = sites %>% filter(period == '2550BC to 2000BC')
 
 survey = st_read("../data/vect/data.gpkg", layer = "njs_survey") %>% st_as_sfc()
 
@@ -130,4 +133,41 @@ sites_ia$d_freq = pointdensity(st_coordinates(sites_ia), eps = 3000, type = "fre
 sites_ia$d_dens = pointdensity(st_coordinates(sites_ia), eps = 3000, type = "density")
 
 st_write(sites_ia,"../data/vect/sites_ia.shp")
+```
+
+# Kernel Density
+
+```{r}
+ppp = as.ppp(sites_ia)
+
+plot(density.ppp(ppp, sigma = 2000))
+
+a = densityHeat.ppp(ppp, 
+                    sigma = 1000,
+                 at="pixels",leaveoneout = TRUE)
+
+plot(a)
+
+plot(adaptive.density(ppp, 0), main="Voronoi estimate")
+
+  Z <- density(split(amacrine), 0.05)
+  plot(Z)
+  
+  persp(a, theta=30, phi=30)
+```
+
+```{r}
+library(SpatialKDE)
+
+cell_size = 2500
+
+grid = create_grid_rectangular(sites, cell_size = cell_size)
+
+grid_ba = create_grid_rectangular(sites_ba, cell_size = cell_size)
+
+plot(grid$geometry)
+plot(sites_ia$geom, add = TRUE)
+
+plot(grid_ba$geometry)
+plot(sites_ba$geom, add = TRUE)
 ```

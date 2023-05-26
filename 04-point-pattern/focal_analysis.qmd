@@ -1,0 +1,425 @@
+---
+title: "focal analysis"
+format: html
+editor: visual
+---
+
+Packages
+
+```{r}
+
+library(sf)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(scales)
+library(patchwork)
+library(tmap)
+library(gdata)
+```
+
+Functions
+
+```{r}
+
+# agr zones
+source("../func/calc_agr_zones_sf.R")
+
+# size category
+source("../func/site_category.R")
+
+# angle and nn
+source("../func/angleCalc.R")
+source("../func/nearNeighb.R")
+
+# winkelmass - uniform angle index
+source("../func/winkelmass.R")
+
+# differentiation
+source("../func/dbhDiff.R")
+
+# dominance
+source("../func/dbhDom.R")
+
+# crowding index
+
+# focal overlap index
+
+```
+
+Data
+
+```{r}
+
+st_layers("../data/vect/njs.gpkg")
+
+sites = st_read("../data/vect/njs.gpkg", layer = "sites")
+
+sites = sites %>% 
+  mutate(
+    xcoord = st_coordinates(sites)[,1],
+    ycoord = st_coordinates(sites)[,2]
+  )
+
+sites = site_category_numeric(df = sites, col = "size_ha")
+
+```
+
+Plot data by using beginning date for a period
+
+```{r}
+
+ggplot(data = sites, mapping = aes(x = factor(time_start))) +
+  geom_bar(fill = "#0b7285") +
+  theme_minimal()
+
+```
+
+Select the following periods: 2550BC to 2000BC; 900BC to 600BC, 300BC to 50BC and 300AC to 400AC.
+
+```{r}
+
+sites_2550_BC = sites %>% filter(time_start == -2550)
+
+sites_900_BC =  sites %>% filter(time_start == -900)
+
+
+```
+
+Map Sites
+
+```{r}
+tmap_mode("plot")
+
+map_2550_BC = tm_shape(sites_2550_BC) +
+   tm_dots(size = 0.5, alpha = 0.8) +
+   tm_layout(main.title = "NJS: 2550BC to 2000BC")
+
+map_900_BC = tm_shape(sites_900_BC) +
+   tm_dots(size = 0.5, alpha = 0.8) +
+   tm_layout(main.title = "NJS: 900BC to 600BC")
+
+
+tmap_arrange(map_2550_BC, map_900_BC, nrow = 1)
+
+```
+Uniform Angle Index
+
+* 0 - Highly regular
+* 0.25 - Regular
+* 0.5 - Random
+* 0.75 - Clustered
+* 1 - Highly Clustered
+
+```{r}
+
+sites_2550_BC$wm = as.factor(winkelmass(sites_2550_BC$xcoord, sites_2550_BC$ycoord, k = 4))
+
+sites_900_BC$wm = as.factor(winkelmass(sites_900_BC$xcoord, sites_900_BC$ycoord, k = 4))
+
+```
+
+
+```{r}
+tmap_mode("plot")
+
+map_2550_BC = tm_shape(sites_2550_BC) +
+   tm_dots(size = 0.5, alpha = 0.8, col = "wm", palette = "-GnBu") +
+   tm_layout(main.title = "NJS: 2550BC to 2000BC")
+
+map_900_BC = tm_shape(sites_900_BC) +
+   tm_dots(size = 0.5, alpha = 0.8, col = "wm", palette = "-GnBu") +
+   tm_layout(main.title = "NJS: 900BC to 600BC")
+
+
+tmap_arrange(map_2550_BC, map_900_BC, nrow = 1)
+
+
+
+```
+```{r}
+
+w1 = ggplot(data = sites_2550_BC, mapping = aes(x = factor(wm), fill = wm)) +
+  geom_bar(aes(y = (..count..)/sum(..count..))) +
+  scale_y_continuous(labels=scales::percent) +
+  ylab("relative frequencies") +
+  scale_fill_brewer(palette = "YlGnBu")+
+  labs(title = "NJS: 2550BC to 2000BC") +
+  theme_minimal()
+
+w2 = ggplot(data = sites_900_BC, mapping = aes(x = factor(wm), fill = wm)) +
+  geom_bar(aes(y = (..count..)/sum(..count..))) +
+  scale_y_continuous(labels=scales::percent) +
+  ylab("relative frequencies") +
+  scale_fill_brewer(palette = "YlGnBu")+
+  labs(title = "NJS: 900BC to 600BC") +
+  theme_minimal()
+
+
+w1 + w2
+
+```
+
+Size Dominance
+
+```{r}
+
+# 2550 to 2000
+
+sites_2550_BC_DF = st_drop_geometry(sites_2550_BC)
+
+nb = nearNeighb(sites_2550_BC_DF$xcoord, sites_2550_BC_DF$ycoord, sites_2550_BC_DF$id, k = 4)
+
+sdom = lapply(nb, function(x) {
+  nb <- merge(x, sites_2550_BC_DF, by.x = "nb", by.y = "id")
+  focal_size <- unique(sites_2550_BC_DF[sites_2550_BC_DF$id == nb$focal,"category"])
+  dbhDom(nb$category,focal_size)
+  
+})
+
+sdom_2550BC = as.data.frame(do.call(rbind, sdom))
+
+sdom_2550BC = sdom_2550BC %>% 
+  transmute(
+    id = rownames(sdom_2550BC),
+    dom = V1
+  )
+
+rownames(sdom_2550BC) =  NULL
+
+# 900 to 600
+
+sites_900_BC_DF = st_drop_geometry(sites_900_BC)
+
+nb = nearNeighb(sites_900_BC_DF$xcoord, sites_900_BC_DF$ycoord, sites_900_BC_DF$id, k = 4)
+
+sdom = lapply(nb, function(x) {
+  nb <- merge(x, sites_900_BC_DF, by.x = "nb", by.y = "id")
+  focal_size <- unique(sites_900_BC_DF[sites_900_BC_DF$id == nb$focal,"category"])
+  dbhDom(nb$category,focal_size)
+  
+})
+
+sdom_900BC = as.data.frame(do.call(rbind, sdom))
+
+sdom_900BC = sdom_900BC %>% 
+  transmute(
+    id = rownames(sdom_900BC),
+    dom = V1
+  )
+
+rownames(sdom_900BC) =  NULL
+
+```
+
+
+Plot size dominance
+
+```{r}
+
+dom1 = ggplot(data = sdom_2550BC, mapping = aes(x = as.factor(dom), fill = as.factor(dom))) +
+  geom_bar(aes(y = (..count..)/sum(..count..))) +
+  scale_y_continuous(labels=scales::percent) +
+  ylab("relative frequencies") +
+  scale_fill_brewer(palette = "YlGnBu")+
+  labs(title = "NJS: 2550BC to 2000BC") +
+  theme_minimal()
+
+dom2 = ggplot(data = sdom_900BC, mapping = aes(x = as.factor(dom), fill = as.factor(dom))) +
+  geom_bar(aes(y = (..count..)/sum(..count..))) +
+  scale_y_continuous(labels=scales::percent) +
+  ylab("relative frequencies") +
+  scale_fill_brewer(palette = "YlGnBu")+
+  labs(title = "NJS: 900BC to 600BC") +
+  theme_minimal()
+
+dom1 + dom2
+
+
+```
+
+
+Size Differentiation
+
+```{r}
+# 2550 to 2000
+
+sites_2550_BC_DF = st_drop_geometry(sites_2550_BC)
+
+nb = nearNeighb(sites_2550_BC_DF$xcoord, sites_2550_BC_DF$ycoord, sites_2550_BC_DF$id, k = 4)
+
+sdiff = lapply(nb, function(x) {
+  nb <- merge(x, sites_2550_BC_DF, by.x = "nb", by.y = "id")
+  focal_size <- unique(sites_2550_BC_DF[sites_2550_BC_DF$id == nb$focal,"size_ha"])
+  dbhDiff(nb$size_ha,focal_size)
+  
+})
+
+sdiff_2550BC = as.data.frame(do.call(rbind, sdiff))
+
+sdiff_2550BC = sdiff_2550BC %>% 
+  transmute(
+    id = rownames(sdiff_2550BC),
+    diff = V1
+  )
+
+rownames(sdiff_2550BC) =  NULL
+
+# 900 to 600
+
+sites_900_BC_DF = st_drop_geometry(sites_900_BC)
+
+nb = nearNeighb(sites_900_BC_DF$xcoord, sites_900_BC_DF$ycoord, sites_900_BC_DF$id, k = 4)
+
+sdiff = lapply(nb, function(x) {
+  nb <- merge(x, sites_900_BC_DF, by.x = "nb", by.y = "id")
+  focal_size <- unique(sites_900_BC_DF[sites_900_BC_DF$id == nb$focal,"size_ha"])
+  dbhDiff(nb$size_ha,focal_size)
+  
+})
+
+sdiff_900BC = as.data.frame(do.call(rbind, sdiff))
+
+sdiff_900BC = sdiff_900BC %>% 
+  transmute(
+    id = rownames(sdiff_900BC),
+    diff = V1
+  )
+
+rownames(sdiff_900BC) =  NULL
+```
+
+Plot Size Differentation
+
+```{r}
+
+size_diff = combine(sdiff_2550BC,sdiff_900BC)
+
+ggplot() +
+  geom_density(data = size_diff, aes(x = diff, color = source), alpha = 0.3) +
+  scale_color_manual(values=c("#9ecae1","#fdae6b")) +
+  geom_vline(aes(xintercept = mean(sdiff_2550BC$diff)), color = "#9ecae1", linetype = "dotted") +
+  geom_vline(aes(xintercept= mean(sdiff_900BC$diff)), color = "#fdae6b", linetype = "dotted") +
+  labs(title = "Size Differentiation",
+       subtitle = "0 implies neighbouring sites have equal size") +
+  theme_minimal()
+
+```
+
+Crowding Index A - based on Agricultural Zones
+
+```{r}
+
+# 2550BC calculate agr zones
+sites_2550_BC_AGR = calc_agr_zones_sf(sites_2550_BC, size = "size_ha")
+
+# calculate number of overlapping agr zones
+sites_2550_BC_AGR$n.overlap = lengths(st_overlaps(sites_2550_BC_AGR))
+
+# calculate index 
+
+sites_2550_BC_AGR$focal.over = sites_2550_BC_AGR$n.overlap / 4
+
+# 900BC calculate agr zones
+sites_900_BC_AGR = calc_agr_zones_sf(sites_900_BC, size = "size_ha")
+
+# calculate number of overlapping agr zones
+sites_900_BC_AGR$n.overlap = lengths(st_overlaps(sites_900_BC_AGR))
+
+sites_900_BC_AGR$n.overlap = replace(sites_900_BC_AGR$n.overlap, sites_900_BC_AGR$n.overlap>4, 4)
+
+# calculate index 
+sites_900_BC_AGR$focal.over = sites_900_BC_AGR$n.overlap / 4
+
+
+
+
+
+```
+Plot
+
+```{r}
+f1 = ggplot(data = sites_2550_BC_AGR, mapping = aes(x = as.factor(focal.over), fill = as.factor(focal.over))) +
+  geom_bar(aes(y = (..count..)/sum(..count..))) +
+  scale_y_continuous(labels=scales::percent) +
+  ylab("relative frequencies") +
+  scale_fill_brewer(palette = "YlGnBu")+
+  labs(title = "NJS: 2550BC to 2000BC") +
+  theme_minimal()
+
+f2 = ggplot(data = sites_900_BC_AGR, mapping = aes(x = as.factor(focal.over), fill = as.factor(focal.over))) +
+  geom_bar(aes(y = (..count..)/sum(..count..))) +
+  scale_y_continuous(labels=scales::percent) +
+  ylab("relative frequencies") +
+  scale_fill_brewer(palette = "YlGnBu")+
+  labs(title = "NJS: 900BC to 600BC") +
+  theme_minimal()
+
+f1 + f2
+```
+Crowding Index B - based on proportion of Agricultural Zones Area overlapping
+
+```{r}
+
+# 2550BC
+
+
+s2550BC = sites_2550_BC_AGR %>% 
+  st_intersection() %>% 
+  filter(n.overlaps == 1) %>% 
+  mutate(
+    area_free = unclass(st_area(.)),
+    area_over = agr_area - area_free,
+    index = area_over / agr_area
+  )
+
+
+# 900BC
+s900BC = sites_900_BC_AGR %>% 
+  st_intersection() %>% 
+  filter(n.overlaps == 1) %>% 
+  mutate(
+    area_free = unclass(st_area(.)),
+    area_over = agr_area - area_free,
+    index = area_over / agr_area
+  )
+
+  
+
+
+```
+
+Map
+```{r}
+
+tmap_mode("view")
+tmap_options(check.and.fix = TRUE)
+st_is_valid(s2550BC)
+tm_shape(s2550BC) +
+  tm_polygons(col = "index") +
+  tm_shape(s900BC) +
+  tm_polygons(col = "index") 
+  
+  
+
+
+```
+
+Plot
+
+```{r}
+crowd = combine(s2550BC,s900BC)
+
+ggplot() +
+  geom_density(data = crowd, aes(x = index, color = source), alpha = 0.3) +
+  scale_color_manual(values=c("#9ecae1","#fdae6b")) +
+  geom_vline(aes(xintercept = mean(s2550BC$index)), color = "#9ecae1", linetype = "dotted") +
+  geom_vline(aes(xintercept= mean(s900BC$index)), color = "#fdae6b", linetype = "dotted") +
+  labs(title = "Crowding Index",
+       subtitle = "0 implies no overlap - 1 implies total overlap") +
+  theme_minimal()
+
+# Look at proportions
+```
+
+

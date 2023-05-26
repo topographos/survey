@@ -1,20 +1,27 @@
-#
+library(tidyverse)
+library(sf)
+library(tmap)
+
+sites = st_read("./data/vect/njs.gpkg", layer = "sites")
+
+survey = st_read("./data/vect/data.gpkg", layer = "njs_survey") |> select(code)
+
 area_s = as.numeric(st_area(survey))
 
-area_agr = sum(as.numeric(st_area(agr_zones_sf)))
+sites_df= st_drop_geometry(sites)
 
-sites_df= st_drop_geometry(sites_ia)
+sites_df$pop = sites_df$size_ha * 100
 
-sites_df$size_km = sites_df$size_ha / 100
 
-pop = round(sites_df$size_ha * 100)
+rBaseTotal <- sqrt(area_s/(sum(sites_df$pop) * pi))
 
-rBaseTotal <- sqrt(area_s/(sum(sites_df$size_ha) * pi))
+radiusVectorTotal <- sqrt(sites_df$pop)*rBaseTotal
 
-radiusVectorTotal <- sqrt(sites_df$size_ha)*rBaseTotal
+sites.buf = st_buffer(sites, dist = radiusVectorTotal )
 
-plot(st_buffer(sites_ia$geometry, dist = radiusVectorTotal ))
-plot(agr_zones_sf$geometry)
+tm_shape(sites.buf) +
+  tm_borders() +
+  tm_facets(by = "time_start")
 
 
 agr_zones_sf$radius = sqrt(agr_zones_sf$agr_area/pi)
@@ -43,5 +50,6 @@ plot(st_buffer(xy_theoretical, dist = rBaseTotal ))
 
 xy_theoretical = sf::st_sample(survey, 83, type = "regular", offset = c(0,0)) %>% st_as_sf()
 
+sum(st_area(sites.buf))
 
-
+st_area(survey)

@@ -2,7 +2,7 @@
 library(potential)
 library(mapsf)
 library(isdas)
-
+library(sf)
 # data
 
 data("PointPatterns")

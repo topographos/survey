@@ -1,9 +1,12 @@
 library(sf)
 library(dplyr)
-
+install.packages("concaveman")
+library(concaveman)
 # load all sites
 
-n_mesopotamia_sites = st_read("./data/raw/n_mesopotamia/north_mesopotamia_sites.shp")
+n_mesopotamia_sites = st_read("./data/raw/north_mesopotamia_sites.shp")
+
+plot(concaveman(njs_sites,concavity = 2.3))
 
 # glimpse at data
 head(n_mesopotamia_sites)
@@ -12,8 +15,8 @@ head(n_mesopotamia_sites)
 unique(n_mesopotamia_sites$Source)
 
 # THS Survey ----
-ths_sites = n_mesopotamia_sites %>% 
-  filter(Source == "Ur 2010")
+njs_sites = n_mesopotamia_sites %>% 
+  filter(Source == "Wilkinson and Tucker 1995")
 
 # plot sites
 plot(ths_sites$geometry)

@@ -35,7 +35,7 @@ survey = st_read("../data/vect/data.gpkg",  layer = "njs_survey", quiet = TRUE)
 sites = readRDS("../data/tab/njs_sites_LONG_SF.rds")
 
 # filter Bronze Age sites
-sites_ba = sites %>% filter(time_start == -1400)
+sites_ba = sites %>% filter(time_start == -2550)
 
 # filter iron age sitees
 sites_ia = sites %>% filter(time_start == -900)
@@ -94,7 +94,7 @@ Model interaction
 
 ```{r}
 
-plot_inter(fun = "e", span = 2000, beta = 2, limit = 5000)
+plot_inter(fun = "e", span = 300, beta = 2, limit = 500)
 
 
 
@@ -110,7 +110,7 @@ grid$pot_ba <- potential(x = sites_ba,
                          d = d_ba,
                          var = "size_ha", 
                          fun = "e",
-                         span = 2000, 
+                         span = 1000, 
                          beta = 2
                          )
 
@@ -120,10 +120,13 @@ grid$pot_ia <- potential(x = sites_ia,
                          d = d_ia,
                          var = "size_ha", 
                          fun = "e",
-                         span = 2000, 
+                         span = 1000, 
                          beta = 2
                          )
 
+grid$pot_ba2 <- 100 * grid$pot_ba / max(grid$pot_ba)
+
+grid$pot_ia2 <- 100 * grid$pot_ia / max(grid$pot_ia)
 
 ```
 
@@ -131,20 +134,22 @@ Compute Potential
 
 ```{r}
 equipot_ba =  equipotential(x = grid, 
-                          var = "pot_ba", 
+                          var = "pot_ba2", 
                           nclass = 10,
                           mask = survey
                           )
 
 equipot_ia =  equipotential(x = grid, 
-                          var = "pot_ia", 
+                          var = "pot_ia2", 
                           nclass = 10,
                           mask = survey
                           )
 
 ba = tm_shape(equipot_ba) +
-  tm_polygons(col = "center") +
-  tm_layout(title = "Bronze Age")
+  tm_polygons(col = "center", ) +
+  tm_layout(title = "Bronze Age") +
+  tm_shape(sites_ba) +
+  tm_dots(size = 0.5, alpha = 0.5)
 
 ia = tm_shape(equipot_ia) +
   tm_polygons(col = "center") +

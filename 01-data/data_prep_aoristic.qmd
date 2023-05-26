@@ -46,10 +46,10 @@ n_mes_sites_raw = n_mes_sites_raw %>%
   )
 
 # select sites from one survey to analyse
-sites_njs = n_mes_sites_raw %>% filter(code == "LCP")
+sites_tbs= n_mes_sites_raw %>% filter(code == "TBS")
 
 # look at the data
-knitr::kable(head(sites_njs))
+knitr::kable(head(sites_tbs))
 
 ```
 
@@ -57,10 +57,10 @@ Do integrity checks - compare number of sites after rounding time blocks to 50 y
 
 ```{r}
 # set geometry to null
-sites_njs = st_drop_geometry(sites_njs)
+sites_tbs = st_drop_geometry(sites_tbs)
 
 # check periods 
-summary_periods = sites_njs %>% 
+summary_periods = sites_tbs %>% 
   group_by(start_date, end_date) %>% 
   count()
 
@@ -69,7 +69,7 @@ sum(summary_periods$n)
 
 # create column for aoristic analysis
 # round the periods
-sites_njs = sites_njs %>% 
+sites_tbs = sites_tbs %>% 
   mutate(
     from =round_any(start_date, 50),
     to = round_any(end_date, 50)
@@ -93,7 +93,7 @@ Apply aoristic analysis
 ```{r}
 
 # create aoristic sum ----
-aorist_sum = aoristic(sites_njs, start = -3100, stop = 700,step = 50, weight = TRUE)
+aorist_sum = aoristic(sites_tbs, start = -3200, stop = 700,step = 50, weight = TRUE)
 
 # extract sum for each time step as a vector - to be ploted on y axis
 y = as.vector(aorist_sum)
@@ -115,12 +115,12 @@ array_p = aorist_sum@p
 p_df = as.data.frame(array_p[,,1])
 
 # combine into wide table
-aorist_wide_df = cbind(sites_njs,p_df)
+aorist_wide_df = cbind(sites_tbs,p_df)
 
 # pivot into a longer table
 aorist_long_df = aorist_wide_df %>% 
   pivot_longer(
-    cols = `-3100_-3050`:`650_700`,
+    cols = `-3200_-3150`:`650_700`,
     names_to = "time",
     values_to = "prob"
   ) %>% 
@@ -152,7 +152,7 @@ knitr::kable(head(aorist_wide_df))
 TABLE - LONG
 
 ```{r}
-knitr::kable(head(aorist_wide_df))
+knitr::kable(head(aorist_long_df))
 ```
 
 Save the files
@@ -160,9 +160,9 @@ Save the files
 ```{r}
 #| eval: false
 # save to rds format
-saveRDS(aorist_wide_df,"../data/tab/lcp_sites_WIDE.rds")
+saveRDS(aorist_wide_df,"../data/tab/tbs_sites_WIDE.rds")
 
-saveRDS(aorist_long_df,"../data/tab/lcp_sites_LONG.rds")
+saveRDS(aorist_long_df,"../data/tab/tbs_sites_LONG.rds")
 ```
 
 Spatial Feature
@@ -170,7 +170,7 @@ Spatial Feature
 ```{r}
 
 # read long data 
-sites = readRDS("../data/tab/lcp_sites_LONG.rds")
+sites = readRDS("../data/tab/tbs_sites_LONG.rds")
 
 # provide the EPSG code using st_crs()
 crs_wgs84 = st_crs(4326) # WGS84 has EPSG code 4326
@@ -194,7 +194,7 @@ Save files
 
 ```{r}
 #| eval: false
-saveRDS(sites_sf,"../data/tab/lcp_sites_LONG_SF.rds")
+saveRDS(sites_sf,"../data/tab/tbs_sites_LONG_SF.rds")
 
 ```
 

@@ -15,3 +15,17 @@ site_category = function(df, col){
   df$category = factor(df$category, levels = levels, labels = labels)
   print(df)
 }
+
+site_category_numeric = function(df, col){
+
+  df$category[df[[col]] < 0.1] <- 1
+  df$category[df[[col]] >= 0.1 & df[[col]] < 1 ] <- 2
+  df$category[df[[col]] >= 1 & df[[col]] < 5 ] <- 3
+  df$category[df[[col]] >= 5 & df[[col]] < 10 ] <- 4
+  df$category[df[[col]] >= 10 & df[[col]] < 20 ] <- 5
+  df$category[df[[col]] >= 20 & df[[col]] < 30 ] <- 6
+  df$category[df[[col]] >= 30 & df[[col]] < 50 ] <- 7
+  df$category[df[[col]] >= 50] <- 8
+
+  print(df)
+}
